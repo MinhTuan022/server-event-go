@@ -1,18 +1,26 @@
-const express = require('express');
+const express = require("express");
+const cors = require("cors");
+const authRouter = require("./src/routers/authRouter");
+const connectDB = require("./src/configs/connectDb");
+const responseMiddleHandle = require("./src/middlewares/responseMiddleware");
 
 const app = express();
 
+app.use(cors());
+app.use(express.json());
 const PORT = 3001;
 
-app.get('/auth/test', (_req, res) =>{
-   res.send("Hello")
-})
+app.use("/auth", authRouter);
+
+connectDB();
+
+app.use(responseMiddleHandle);
 
 app.listen(PORT, (err) => {
-   if(err){
-      console.log(err);
-      return;
-   }
+  if (err) {
+    console.log(err);
+    return;
+  }
 
-   console.log(`Server starting at https://localhost:${PORT}`);
+  console.log(`Server starting at https://localhost:${PORT}`);
 });
