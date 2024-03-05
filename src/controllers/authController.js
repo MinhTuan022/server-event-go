@@ -54,12 +54,77 @@ const verification = asyncHandle(async (req, res) => {
     res.status(200).json({
       message: "Send verification email successfully",
       data: {
-         verificationCode: verificationCode,
+        verificationCode: verificationCode,
       },
     });
   } catch (error) {
     //  console.error("Error sending verification email:", error);
     res.status(500).json({ message: "Failed to send verification email" });
+  }
+});
+
+const forgotPassword = asyncHandle(async (req, res) => {
+  const { email, newPassword } = req.body;
+    const existingUser = await UserModel.findOne({ email });
+
+    const verificationCode = Math.round(1000 + Math.random() * 9000);
+
+    const mailOptions = {
+      from: `"Support EventHub Appplication" <${process.env.USERNAME_EMAIL}>`, // Thay bằng email của bạn
+      to: email,
+      subject: "Khôi phục mật khẩu",
+      html: `
+             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+             <h2>Yêu cầu khôi phục mật khẩu</h2>
+    
+             <p>Chào bạn,</p>
+             
+             <p>Bạn đã yêu cầu khôi phục mật khẩu của mình. Đây là mã xác minh của bạn:</p>
+             
+             <p><strong>Verification Code: <span style="font-weight: bold; color: #ff0000;">${verificationCode}</span></strong></p>
+             
+             <p>Vui lòng nhập mã này vào ứng dụng của bạn để hoàn tất quá trình khôi phục mật khẩu. Xin lưu ý rằng mã xác minh sẽ hết hạn sau một thời gian ngắn.</p>
+             
+             <p>Nếu bạn không yêu cầu khôi phục mật khẩu, vui lòng bỏ qua email này.</p>
+             
+             <p>Trân trọng,<br> Event Hub Support</p>
+             </div>
+          `,
+    };
+
+    if (!existingUser) {
+      return res
+        .status(400)
+        .json({ message: `Không tìm thấy tài khoản với email ${email}` });
+    } else {
+      try {
+        // Gửi email
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({
+          message: "Send verification email successfully",
+          data: {
+            verificationCode: verificationCode,
+          },
+        });
+      } catch (error) {
+        //  console.error("Error sending verification email:", error);
+        res.status(500).json({ message: "Failed to send verification email" });
+      }
+    }
+
+    if (newPassword) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await UserModel.findByIdAndUpdate(existingUser._id, {
+      password: hashedPassword,
+      isChangePassword: true,
+    })
+      .then(() => {
+        console.log("Done");
+      })
+      .catch((error) => console.log(error));
+
   }
 });
 
@@ -122,4 +187,5 @@ module.exports = {
   register,
   login,
   verification,
+  forgotPassword,
 };
