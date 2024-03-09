@@ -65,15 +65,15 @@ const verification = asyncHandle(async (req, res) => {
 
 const forgotPassword = asyncHandle(async (req, res) => {
   const { email, newPassword } = req.body;
-    const existingUser = await UserModel.findOne({ email });
+  const existingUser = await UserModel.findOne({ email });
 
-    const verificationCode = Math.round(1000 + Math.random() * 9000);
+  const verificationCode = Math.round(1000 + Math.random() * 9000);
 
-    const mailOptions = {
-      from: `"Support EventHub Appplication" <${process.env.USERNAME_EMAIL}>`, // Thay bằng email của bạn
-      to: email,
-      subject: "Khôi phục mật khẩu",
-      html: `
+  const mailOptions = {
+    from: `"Support EventHub Appplication" <${process.env.USERNAME_EMAIL}>`, // Thay bằng email của bạn
+    to: email,
+    subject: "Khôi phục mật khẩu",
+    html: `
              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
              <h2>Yêu cầu khôi phục mật khẩu</h2>
     
@@ -90,29 +90,29 @@ const forgotPassword = asyncHandle(async (req, res) => {
              <p>Trân trọng,<br> Event Hub Support</p>
              </div>
           `,
-    };
+  };
 
-    if (!existingUser) {
-      return res
-        .status(400)
-        .json({ message: `Không tìm thấy tài khoản với email ${email}` });
-    } else {
-      try {
-        // Gửi email
-        await transporter.sendMail(mailOptions);
-        res.status(200).json({
-          message: "Send verification email successfully",
-          data: {
-            verificationCode: verificationCode,
-          },
-        });
-      } catch (error) {
-        //  console.error("Error sending verification email:", error);
-        res.status(500).json({ message: "Failed to send verification email" });
-      }
+  if (!existingUser) {
+    return res
+      .status(400)
+      .json({ message: `Không tìm thấy tài khoản với email ${email}` });
+  } else {
+    try {
+      // Gửi email
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({
+        message: "Send verification email successfully",
+        data: {
+          verificationCode: verificationCode,
+        },
+      });
+    } catch (error) {
+      //  console.error("Error sending verification email:", error);
+      res.status(500).json({ message: "Failed to send verification email" });
     }
+  }
 
-    if (newPassword) {
+  if (newPassword) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
@@ -124,7 +124,6 @@ const forgotPassword = asyncHandle(async (req, res) => {
         console.log("Done");
       })
       .catch((error) => console.log(error));
-
   }
 });
 
@@ -183,9 +182,33 @@ const login = asyncHandle(async (req, res) => {
     },
   });
 });
+const loginSocial = asyncHandle(async (req, res) => {
+  const userInfo = req.body;
+  const existingUser = await UserModel.findOne({ email: userInfo.email });
+  let user = { ...userInfo };
+
+  if (existingUser) {
+    await UserModel.findByIdAndUpdate(existingUser.id, {
+        ...userInfo,
+        updatedAt: Date.now(),
+    });
+    user.accessToken = await getJsonWebToken(userInfo.email, userInfo.id);
+  } else {
+    const newUser = new UserModel({
+      email: userInfo.email,
+      name: userInfo.name,
+      ...userInfo,
+    });
+    await newUser.save();
+
+    user.accessToken = await getJsonWebToken(userInfo.email, newUser.id);
+  }
+  res.status(200).json({ message: "Login Social Successfully !", data: user });
+});
 module.exports = {
   register,
   login,
   verification,
   forgotPassword,
+  loginSocial
 };
