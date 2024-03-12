@@ -133,7 +133,8 @@ const register = asyncHandle(async (req, res) => {
   const existingUser = await UserModel.findOne({ email });
 
   if (existingUser) {
-    return res.status(400).json({ message: "User has already exits !" });
+    res.status(400);
+    throw new Error("User has already exits !");
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -162,15 +163,17 @@ const login = asyncHandle(async (req, res) => {
   const existingUser = await UserModel.findOne({ email });
 
   if (!existingUser) {
-    return res.status(403).json({ message: "User not found !" });
+    res.status(403);
+    // .json({ message: "User not found !" });
+
+    throw new Error("User not found !");
   }
 
   const isMatchPassword = await bcrypt.compare(password, existingUser.password);
 
   if (!isMatchPassword) {
-    return res
-      .status(401)
-      .json({ message: "Username or password are incorrect" });
+    res.status(401);
+    throw new Error("Username or password are incorrect");
   }
 
   res.status(200).json({
@@ -189,8 +192,8 @@ const loginSocial = asyncHandle(async (req, res) => {
 
   if (existingUser) {
     await UserModel.findByIdAndUpdate(existingUser.id, {
-        ...userInfo,
-        updatedAt: Date.now(),
+      ...userInfo,
+      updatedAt: Date.now(),
     });
     user.accessToken = await getJsonWebToken(userInfo.email, userInfo.id);
   } else {
@@ -210,5 +213,5 @@ module.exports = {
   login,
   verification,
   forgotPassword,
-  loginSocial
+  loginSocial,
 };

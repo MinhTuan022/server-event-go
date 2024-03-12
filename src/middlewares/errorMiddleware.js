@@ -1,4 +1,4 @@
-const responseMiddleHandle = (err, _req, res, next) => {
+const errorMiddleHandle = (err, _req, res, next) => {
   const statusCode = res.statusCode ? res.statusCode : 500;
 
   res.status(statusCode).json({
@@ -6,6 +6,8 @@ const responseMiddleHandle = (err, _req, res, next) => {
     statusCode,
     stack: err.stack,
   });
+
+  next();
 };
 
-module.exports = responseMiddleHandle;
+module.exports = errorMiddleHandle;
