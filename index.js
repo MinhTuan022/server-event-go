@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const authRouter = require("./src/routers/authRouter");
+const userRouter = require("./src/routers/userRouter");
+const eventRouter = require("./src/routers/eventRouter");
 const connectDB = require("./src/configs/connectDb");
 const errorMiddleHandle = require("./src/middlewares/errorMiddleware");
 
@@ -11,6 +13,8 @@ app.use(express.json());
 const PORT = 3001;
 
 app.use("/auth", authRouter);
+app.use("/user", userRouter);
+app.use("/event", eventRouter);
 
 connectDB();
 

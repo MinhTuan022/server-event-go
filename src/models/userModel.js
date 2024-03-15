@@ -20,6 +20,7 @@ const UserSchema = new mongoose.Schema({
   photo: {
     type: String,
   },
+  events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   createdAt: {
     type: Date,
     default: Date.now,
