@@ -20,6 +20,8 @@ const UserSchema = new mongoose.Schema({
   photo: {
     type: String,
   },
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   createdAt: {
     type: Date,

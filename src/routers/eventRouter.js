@@ -5,7 +5,7 @@ const eventRouter = Router();
 
 
 eventRouter.post("/add", addEvent);
-eventRouter.get("/byId", getEventById);
+eventRouter.get("/byId/:eventId", getEventById);
 eventRouter.get("/", getAllEvent);
 
 module.exports = eventRouter

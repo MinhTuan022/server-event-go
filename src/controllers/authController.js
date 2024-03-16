@@ -128,7 +128,7 @@ const forgotPassword = asyncHandle(async (req, res) => {
 });
 
 const register = asyncHandle(async (req, res) => {
-  const { email, fullname, password } = req.body;
+  const { email, name, password } = req.body;
 
   const existingUser = await UserModel.findOne({ email });
 
@@ -141,7 +141,7 @@ const register = asyncHandle(async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, salt);
   const newUser = new UserModel({
     email,
-    fullname: fullname ?? "",
+    name: name ? name : "",
     password: hashedPassword,
   });
 
@@ -151,8 +151,9 @@ const register = asyncHandle(async (req, res) => {
     message: "Register new user successfully",
     data: {
       email: newUser.email,
-      id: newUser.id,
-      accessToken: await getJsonWebToken(email, newUser.id),
+      id: newUser._id,
+      name: name ?? "",
+      accessToken: await getJsonWebToken(email, newUser._id),
     },
   });
 });
@@ -179,23 +180,28 @@ const login = asyncHandle(async (req, res) => {
   res.status(200).json({
     message: "Login successfully",
     data: {
-      id: existingUser.id,
+      id: existingUser._id,
       email: existingUser.email,
+      name: existingUser.name ?? "",
       accessToken: await getJsonWebToken(email, existingUser.id),
     },
   });
 });
 const loginSocial = asyncHandle(async (req, res) => {
   const userInfo = req.body;
+  console.log(userInfo);
   const existingUser = await UserModel.findOne({ email: userInfo.email });
-  let user = { ...userInfo };
-
+  let user;
+  console.log("user", user);
   if (existingUser) {
-    await UserModel.findByIdAndUpdate(existingUser.id, {
+    await UserModel.findByIdAndUpdate(existingUser._id, {
       ...userInfo,
       updatedAt: Date.now(),
     });
+    user = existingUser;
+    console.log("huu", user);
     user.accessToken = await getJsonWebToken(userInfo.email, userInfo.id);
+
   } else {
     const newUser = new UserModel({
       email: userInfo.email,
@@ -203,10 +209,21 @@ const loginSocial = asyncHandle(async (req, res) => {
       ...userInfo,
     });
     await newUser.save();
+    user = { ...newUser };
 
     user.accessToken = await getJsonWebToken(userInfo.email, newUser.id);
   }
-  res.status(200).json({ message: "Login Social Successfully !", data: user });
+  res.status(200).json({
+    message: "Login Social Successfully !",
+    data: {
+      accessToken: user.accessToken,
+      id: existingUser ? existingUser._id : newUser._id,
+      email: user.email,
+      // fcmTokens: user.fcmTokens,
+      photo: user.photo,
+      name: user.name,
+    },
+  });
 });
 module.exports = {
   register,

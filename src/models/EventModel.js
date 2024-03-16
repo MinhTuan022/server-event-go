@@ -5,6 +5,7 @@ const eventSchema = new mongoose.Schema({
   description: { type: String, required: true },
   location: { type: String, required: true },
   images: [{ type: String }],
+  photoUrl:{type : String},
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
   organizer: {
