@@ -13,7 +13,7 @@ const getAllUser = async (req, res) => {
 };
 
 const getUserById = async (req, res) => {
-  const userId = req.params.userId;
+  const {userId} = req.query;
   try {
     const user = await UserModel.findById(userId)
       .populate("events")

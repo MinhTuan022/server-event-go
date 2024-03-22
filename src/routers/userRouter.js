@@ -5,7 +5,7 @@ const userRouter = Router();
 
 
 userRouter.get("/", getAllUser)
-userRouter.get("/:userId", getUserById)
+userRouter.get("/userId", getUserById)
 
 
 module.exports = userRouter
