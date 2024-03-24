@@ -17,6 +17,7 @@ const addEvent = async (req, res) => {
       endTime,
       organizer,
       photoUrl,
+      category
     } = req.body;
     const newEvent = new Event({
       title,
@@ -26,6 +27,7 @@ const addEvent = async (req, res) => {
       endTime,
       organizer,
       photoUrl,
+      category
     });
     await newEvent.save({ session });
 
@@ -50,8 +52,8 @@ const getEventById = async (req, res) => {
   const Id = req.params.eventId;
   try {
     const event = await Event.findById(Id)
-      .populate("organizer", "name email")
-      .populate("attendees", "name email");
+      // .populate("organizer", "name email")
+      // .populate("attendees", "name email");
     if (!event) {
       return res.status(404).json({ message: "Sự kiện không tồn tại." });
     }
@@ -64,8 +66,8 @@ const getEventById = async (req, res) => {
 const getAllEvent = async (req, res) => {
   try {
     const eventList = await Event.find()
-      .populate("organizer", "name email photo")
-      .populate("attendees", "name email photo");
+      // .populate("organizer", "name email photo")
+      // .populate("attendees", "name email photo");
     res.status(200).json({ data: eventList });
   } catch (error) {
     res.status(400).json({ message: error.message });
