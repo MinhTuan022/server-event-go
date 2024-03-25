@@ -13,17 +13,67 @@ const getAllUser = async (req, res) => {
 };
 
 const getUserById = async (req, res) => {
-  const {userId} = req.query;
+  const { userId } = req.query;
   try {
-    const user = await UserModel.findById(userId)
-      .populate("events")
-      // .populate("following", "name email");
+    const user = await UserModel.findById(userId).populate("events");
+    // .populate("following", "name email");
     res.status(200).json({ data: user });
   } catch (error) {
     res.status(500).json({ message: "Failed to Get User" });
   }
 };
+
+const handleFollow = async (req, res) => {
+  try {
+    const { userId, targetUserId } = req.body;
+
+    const currentUser = await UserModel.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Người dùng không tồn tại" });
+    }
+    const targetUser = await UserModel.findById(targetUserId);
+    if (!targetUser) {
+      return res
+        .status(404)
+        .json({ message: "Người dùng mục tiêu không tồn tại" });
+    }
+
+    const isFollowing = currentUser.following.includes(targetUserId);
+
+    if (isFollowing) {
+      // currentUser.following = currentUser.following.filter(
+      //   (id) => id !== targetUserId
+      // );
+
+      // targetUser.followers = targetUser.followers.filter((id) => id !== userId);
+      const indexTarget = currentUser.following.indexOf(targetUserId);
+      if (indexTarget !== -1) {
+        currentUser.following.splice(indexTarget, 1);
+      }
+
+      const indexCurent = targetUser.followers.indexOf(userId);
+      if (indexCurent !== -1) {
+        targetUser.followers.splice(indexCurent, 1);
+      }
+    } else {
+      currentUser.following.push(targetUserId);
+      // Thêm userId vào danh sách followers của người dùng mục tiêu
+      targetUser.followers.push(userId);
+    }
+
+    await currentUser.save();
+    await targetUser.save();
+
+    res.status(200).json({
+      message: isFollowing ? "Bỏ theo dõi thành công" : "Theo dõi thành công",
+    });
+  } catch (error) {
+    console.error("Lỗi khi theo dõi người dùng:", error);
+    res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+  }
+};
 module.exports = {
   getAllUser,
   getUserById,
+  handleFollow,
 };

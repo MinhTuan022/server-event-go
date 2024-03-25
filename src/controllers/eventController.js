@@ -7,7 +7,7 @@ const UserModel = require("../models/UserModel");
 const addEvent = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-  
+
   try {
     const {
       title,
@@ -17,7 +17,7 @@ const addEvent = async (req, res) => {
       endTime,
       organizer,
       photoUrl,
-      category
+      category,
     } = req.body;
     const newEvent = new Event({
       title,
@@ -27,7 +27,7 @@ const addEvent = async (req, res) => {
       endTime,
       organizer,
       photoUrl,
-      category
+      category,
     });
     await newEvent.save({ session });
 
@@ -51,9 +51,9 @@ const addEvent = async (req, res) => {
 const getEventById = async (req, res) => {
   const Id = req.params.eventId;
   try {
-    const event = await Event.findById(Id)
-      // .populate("organizer", "name email")
-      // .populate("attendees", "name email");
+    const event = await Event.findById(Id);
+    // .populate("organizer", "name email")
+    // .populate("attendees", "name followers");
     if (!event) {
       return res.status(404).json({ message: "Sự kiện không tồn tại." });
     }
@@ -66,12 +66,28 @@ const getEventById = async (req, res) => {
 const getAllEvent = async (req, res) => {
   try {
     const eventList = await Event.find()
-      // .populate("organizer", "name email photo")
-      // .populate("attendees", "name email photo");
+    // .populate("organizer", "name email photo")
+    .populate("attendees", "name followers photo");
     res.status(200).json({ data: eventList });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-module.exports = { addEvent, getEventById, getAllEvent };
+const getGoing = async (req, res) => {
+  try {
+    const { ids } = req.query;
+    const userIds = ids.split(",");
+
+    const users = await UserModel.find({ _id: { $in: userIds } }, 'name followers photo');
+
+    res.status(200).json({
+      message: "Successfully",
+      data: users,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = { addEvent, getEventById, getAllEvent, getGoing };
