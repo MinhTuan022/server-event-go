@@ -18,6 +18,7 @@ const addEvent = async (req, res) => {
       organizer,
       photoUrl,
       category,
+      position,
     } = req.body;
     const newEvent = new Event({
       title,
@@ -28,6 +29,7 @@ const addEvent = async (req, res) => {
       organizer,
       photoUrl,
       category,
+      position,
     });
     await newEvent.save({ session });
 
@@ -63,12 +65,54 @@ const getEventById = async (req, res) => {
   }
 };
 
-const getAllEvent = async (req, res) => {
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in kilometers
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
+  return distance;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
+
+const getEvent = async (req, res) => {
+  const { lat, long, distance, date, limit } = req.query;
   try {
-    const eventList = await Event.find()
-    // .populate("organizer", "name email photo")
-    .populate("attendees", "name followers photo");
-    res.status(200).json({ data: eventList });
+    let query = {};
+    if (date) {
+      query.startTime = { $gte: new Date(date) };
+    }
+
+    const eventList = await Event.find(query)
+      .sort({ startTime: 1 })
+      .limit(limit ?? 0)
+      .populate("organizer", "name  photo")
+      .populate("attendees", "name  followers photo");
+
+    if (lat && long && distance) {
+      const filteredEvents = eventList.filter((event) => {
+        const eventDistance = calculateDistance(
+          lat,
+          long,
+          event.position.coordinates[0],
+          event.position.coordinates[1]
+        );
+        return eventDistance <= distance; // Check if distance is less than or equal to 5km
+      });
+
+      res.status(200).json({ data: filteredEvents });
+    } else {
+      res.status(200).json({ data: eventList });
+    }
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -79,7 +123,10 @@ const getGoing = async (req, res) => {
     const { ids } = req.query;
     const userIds = ids.split(",");
 
-    const users = await UserModel.find({ _id: { $in: userIds } }, 'name followers photo');
+    const users = await UserModel.find(
+      { _id: { $in: userIds } },
+      "name followers photo"
+    );
 
     res.status(200).json({
       message: "Successfully",
@@ -90,4 +137,4 @@ const getGoing = async (req, res) => {
   }
 };
 
-module.exports = { addEvent, getEventById, getAllEvent, getGoing };
+module.exports = { addEvent, getEventById, getEvent, getGoing };
