@@ -6,8 +6,16 @@ const eventRouter = require("./src/routers/eventRouter");
 const categoryRouter = require("./src/routers/categoryRouter");
 const connectDB = require("./src/configs/connectDb");
 const errorMiddleHandle = require("./src/middlewares/errorMiddleware");
+const paypal = require('paypal-rest-sdk');
+const paymentRouter = require("./src/routers/paymentRouter");
 
 const app = express();
+
+paypal.configure({
+  mode:'sandbox',
+  client_id: process.env.PAYPAL_CLIENT_ID,
+  client_secret: process.env.PAYPAL_SECRET
+})
 
 app.use(cors());
 app.use(express.json());
@@ -17,6 +25,7 @@ app.use("/auth", authRouter);
 app.use("/user", userRouter);
 app.use("/event", eventRouter);
 app.use("/category", categoryRouter)
+app.use("/paypal", paymentRouter)
 
 connectDB();
 
