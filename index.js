@@ -8,6 +8,7 @@ const connectDB = require("./src/configs/connectDb");
 const errorMiddleHandle = require("./src/middlewares/errorMiddleware");
 const paypal = require('paypal-rest-sdk');
 const paymentRouter = require("./src/routers/paymentRouter");
+const ticketRouter = require("./src/routers/ticketRoute");
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/user", userRouter);
 app.use("/event", eventRouter);
 app.use("/category", categoryRouter)
 app.use("/paypal", paymentRouter)
+app.use("/ticket", ticketRouter)
 
 connectDB();
 

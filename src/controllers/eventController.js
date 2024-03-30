@@ -19,6 +19,8 @@ const addEvent = async (req, res) => {
       photoUrl,
       category,
       position,
+      ticketTypes,
+      totalTickets
     } = req.body;
     const newEvent = new Event({
       title,
@@ -30,6 +32,8 @@ const addEvent = async (req, res) => {
       photoUrl,
       category,
       position,
+      ticketTypes,
+      totalTickets
     });
     await newEvent.save({ session });
 

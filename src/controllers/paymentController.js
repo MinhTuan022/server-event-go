@@ -2,6 +2,8 @@ const express = require("express");
 const paypal = require("paypal-rest-sdk");
 
 const createPayment = async (req, res) => {
+  const {name, price, quantity} = req.body
+  console.log(req.body)
   const create_payment_json = {
     intent: "sale",
     payer: {
@@ -16,19 +18,17 @@ const createPayment = async (req, res) => {
         item_list: {
           items: [
             {
-              name: "Item Name",
-              sku: "Item SKU",
-              price: "10.00",
+              name: name,
+              price: price,
               currency: "USD",
-              quantity: 1,
+              quantity: quantity,
             },
           ],
         },
         amount: {
           currency: "USD",
-          total: "10.00",
+          total: price*quantity,
         },
-        description: "Description of the payment",
       },
     ],
   };
@@ -39,9 +39,11 @@ const createPayment = async (req, res) => {
     } else {
       for (let i = 0; i < payment.links.length; i++) {
         if (payment.links[i].rel === "approval_url") {
-          // console.log(payment);
+          console.log(payment);
           // res.redirect(payment.links[i].href);
-          return res.status(200).json({message: "Success",data: payment.links[i].href});
+          return res
+            .status(200)
+            .json({ message: "Success", data: payment.links[i].href });
         }
       }
     }
@@ -49,32 +51,35 @@ const createPayment = async (req, res) => {
 };
 
 const paymentSuccess = async (req, res) => {
-  const payerId = req.query.PayerID;
-  const paymentId = req.query.paymentId;
+  res.send("Success");
 
-  const execute_payment_json = {
-    payer_id: payerId,
-  };
+  // const payerId = req.query.PayerID;
+  // const paymentId = req.query.paymentId;
 
-  paypal.payment.execute(paymentId, execute_payment_json, function (
-    error,
-    payment
-  ) {
-    if (error) {
-      console.error(JSON.stringify(error));
-      return res.redirect("/paypal/cancel");
-    } else {
-      // Return ticket information to the user upon successful payment
-      const ticketInfo = {
-        ticketNumber: payment.id,
-        itemName: payment.transactions[0].item_list.items[0].name,
-        totalPrice: payment.transactions[0].amount.total,
-        currency: payment.transactions[0].amount.currency,
-        description: payment.transactions[0].description,
-      };
-      return res.status(200).json({ message: "Success", data: ticketInfo });
-    }
-  });
+  // const execute_payment_json = {
+  //   payer_id: payerId,
+  // };
+
+  // paypal.payment.execute(paymentId, execute_payment_json, function (
+  //   error,
+  //   payment
+  // ) {
+  //   if (error) {
+  //     console.error(JSON.stringify(error));
+  //     return res.redirect("/paypal/cancel");
+  //   } else {
+  //     // Return ticket information to the user upon successful payment
+  //     const ticketInfo = {
+  //       id:payerId,
+  //       ticketNumber: payment.id,
+  //       itemName: payment.transactions[0].item_list.items[0].name,
+  //       totalPrice: payment.transactions[0].amount.total,
+  //       currency: payment.transactions[0].amount.currency,
+  //       description: payment.transactions[0].description,
+  //     };
+  //     return res.status(200).json({ message: "Success", data: ticketInfo });
+  //   }
+  // });
 };
 
 const paymentCancel = async (req, res) => {
