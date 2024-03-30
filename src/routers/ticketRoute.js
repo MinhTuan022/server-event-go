@@ -1,10 +1,11 @@
 const Router = require('express')
-const { createTicket, getAllTicket } = require('../controllers/ticketController')
+const { createTicket, getTicket, getTicketByUser } = require('../controllers/ticketController')
 
 const ticketRouter = Router()
 
 ticketRouter.post("/", createTicket)
-ticketRouter.get("/", getAllTicket)
+ticketRouter.get("/", getTicket)
+ticketRouter.get("/byUser", getTicketByUser)
 
 
 module.exports = ticketRouter

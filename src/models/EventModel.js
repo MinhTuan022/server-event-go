@@ -29,7 +29,7 @@ const eventSchema = new mongoose.Schema({
   },
   ticketTypes: [
     {
-      typeTicket: {type: String, enum: ["Economy", "VIP"]},
+      typeTicket: {type: String,},
       price: {type: Number}
     }
   ]

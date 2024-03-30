@@ -107,8 +107,8 @@ const getEvent = async (req, res) => {
         const eventDistance = calculateDistance(
           lat,
           long,
-          event.position.coordinates[0],
-          event.position.coordinates[1]
+          event.position.coordinates[1],
+          event.position.coordinates[0]
         );
         return eventDistance <= distance; // Check if distance is less than or equal to 5km
       });

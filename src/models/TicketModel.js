@@ -11,7 +11,7 @@ const ticketSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true },
   status: {
     type: String,
-    enum: ["PENDING", "CONFIRMED", "CANCELLED"],
+    enum: ["Paid", "Completed", "Cancelled"],
     default: "PENDING",
   },
 });
