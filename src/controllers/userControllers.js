@@ -60,14 +60,14 @@ const handleFollow = async (req, res) => {
       // Thêm userId vào danh sách followers của người dùng mục tiêu
       targetUser.followers.push(userId);
     }
-    const followers = targetUser.followers.length
+    const followers = targetUser.followers.length;
     // console.log(followers)
     await currentUser.save();
     await targetUser.save();
 
     res.status(200).json({
-      message: isFollowing ? "Bỏ theo dõi thành công" : "Theo dõi thành công", 
-      data: {followers: followers, isFollowing: isFollowing}
+      message: isFollowing ? "Bỏ theo dõi thành công" : "Theo dõi thành công",
+      data: { followers: followers, isFollowing: isFollowing },
     });
   } catch (error) {
     console.error("Lỗi khi theo dõi người dùng:", error);
@@ -77,30 +77,28 @@ const handleFollow = async (req, res) => {
 
 const checkFollowingStatus = async (req, res) => {
   try {
-    const {userId, targetUserId} = req.query
+    const { userId, targetUserId } = req.query;
     // console.log(userId, targetUserId)
     const currentUser = await UserModel.findById(userId);
     if (!currentUser) {
       return res.status(404).json({ message: "Người dùng không tồn tại" });
     }
 
-
     const isFollowing = currentUser.following.includes(targetUserId);
     // console.log(isFollowing)
     res.status(200).json({
       message: isFollowing ? "Đang theo dõi" : "Chưa Theo dõi",
-      data: isFollowing
+      data: isFollowing,
     });
   } catch (error) {
     console.error("Lỗi khi theo dõi người dùng:", error);
     res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
   }
-
-}
+};
 
 const getFollowers = async (req, res) => {
   try {
-    const {targetUserId} = req.query
+    const { targetUserId } = req.query;
     const targetUser = await UserModel.findById(targetUserId);
     if (!targetUser) {
       return res
@@ -110,17 +108,35 @@ const getFollowers = async (req, res) => {
 
     res.status(200).json({
       message: "Followers",
-      data:  targetUser.followers.length
+      data: targetUser.followers.length,
     });
   } catch (error) {
     console.error("Lỗi khi theo dõi người dùng:", error);
     res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
   }
-}
+};
+
+const getFavorites = async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const userFavorites = await UserModel.findById(
+      userId,
+      "favorites"
+    ).populate("favorites");
+    if (!userFavorites) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({message: "Successfully", data: userFavorites.favorites});
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   getAllUser,
   getUserById,
   handleFollow,
   checkFollowingStatus,
-  getFollowers
+  getFollowers,
+  getFavorites
 };

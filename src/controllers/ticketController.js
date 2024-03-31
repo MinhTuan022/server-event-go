@@ -7,9 +7,10 @@ const createTicket = async (req, res) => {
   try {
     const ticketData = req.body;
     // console.log({ eventId, userId, quantity, totalPrice, status });
-    // console.log(ticketData)
+    console.log(ticketData);
     const existingTicket = await TicketModel.findOne({
       eventId: ticketData.eventId,
+      userId: ticketData.userId,
     });
     // console.log(existingTicket)
     if (existingTicket) {
