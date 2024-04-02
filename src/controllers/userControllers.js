@@ -11,7 +11,48 @@ const getAllUser = async (req, res) => {
     res.status(500).json({ message: "Failed to Get List User" });
   }
 };
+const updateProfile = async (req, res) => {
+  try {
+    const { userId, firstName, lastName, about, photo } = req.body;
+    if (!userId) {
+      return res.status(400).json({ message: "No data provided for update" });
+    }
+    // firstName, lastName, about
+    const existingUser = await UserModel.findById(userId);
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    existingUser.name =
+      firstName && lastName
+        ? `${firstName} ${lastName}`
+        : firstName
+        ? `${firstName} ${existingUser.lastname}`
+        : lastName
+        ? `${existingUser.firstname} ${lastName}`
+        : existingUser.name;
+    existingUser.firstname = firstName || existingUser.firstname;
+    existingUser.lastname = lastName || existingUser.lastname;
+    existingUser.about = about || existingUser.about;
+    existingUser.photo = photo || existingUser.photo;
+    existingUser.updateAt = Date.now()
 
+
+    await existingUser.save();
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      data: {
+        name: existingUser.name,
+        firstname: existingUser.firstname,
+        lastname: existingUser.lastname,
+        about: existingUser.about,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 const getUserById = async (req, res) => {
   const { userId } = req.query;
   try {
@@ -126,17 +167,60 @@ const getFavorites = async (req, res) => {
     if (!userFavorites) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json({message: "Successfully", data: userFavorites.favorites});
+    res
+      .status(200)
+      .json({ message: "Successfully", data: userFavorites.favorites });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 };
 
+const handleFavorite = async (req, res) => {
+  const { eventId, userId } = req.body;
+  try {
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      res.status(404).json("User not found");
+    }
+
+    const isFavorite = user.favorites.includes(eventId);
+
+    if (!isFavorite) {
+      user.favorites.push(eventId);
+    } else {
+      const index = user.favorites.indexOf(eventId);
+      if (index === -1) {
+        return res
+          .status(404)
+          .json({ message: "Event not found in favorites" });
+      }
+
+      // Xóa sự kiện khỏi danh sách ưa thích của người dùng
+      user.favorites.splice(index, 1);
+    }
+    await user.save();
+
+    res.status(200).json({
+      message: isFavorite
+        ? "Event removed from favorites successfully"
+        : "Event added to favorites successfully",
+      data: user.favorites,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const addFavorite = async () => {};
+
+const removeFavorite = async () => {};
 module.exports = {
   getAllUser,
   getUserById,
   handleFollow,
   checkFollowingStatus,
   getFollowers,
-  getFavorites
+  getFavorites,
+  handleFavorite,
+  updateProfile
 };

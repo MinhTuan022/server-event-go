@@ -194,9 +194,10 @@ const loginSocial = asyncHandle(async (req, res) => {
   let user;
   if (existingUser) {
     await UserModel.findByIdAndUpdate(existingUser._id, {
-      ...userInfo,
-      updatedAt: Date.now(),
+      // ...userInfo,
+      updateAt: Date.now(),
     });
+    existingUser.save();
     user = existingUser;
     console.log("huu", user);
     // user.accessToken = await getJsonWebToken(userInfo.email, userInfo.id);
@@ -219,12 +220,12 @@ const loginSocial = asyncHandle(async (req, res) => {
     message: "Login Social Successfully !",
     data: {
       accessToken: user.accessToken,
-      // id: existingUser ? existingUser._id : newUser._id,
       id: user._id,
       email: user.email,
       // fcmTokens: user.fcmTokens,
       photo: user.photo,
       name: user.name,
+      favorites: user.favorites ?? []
     },
   });
 });
