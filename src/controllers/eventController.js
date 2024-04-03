@@ -99,8 +99,8 @@ const getEvent = async (req, res) => {
     const eventList = await Event.find(query)
       .sort({ startTime: 1 })
       .limit(limit ?? 0)
-      .populate("organizer", "name  photo")
-      .populate("attendees", "name  followers photo");
+      // .populate("organizer", "name  photo")
+      // .populate("attendees", "name  followers photo");
 
     if (lat && long && distance) {
       const filteredEvents = eventList.filter((event) => {

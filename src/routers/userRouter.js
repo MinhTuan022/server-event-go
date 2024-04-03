@@ -1,5 +1,5 @@
 const Router = require("express");
-const {getAllUser, getUserById, handleFollow, checkFollowingStatus, getFollowers, getFavorites, handleFavorite, updateProfile} = require("../controllers/userControllers")
+const {getAllUser, getUserById, handleFollow, checkFollowingStatus, getFollowers, getFavorites, handleFavorite, updateProfile, checkFriend, checkRelationship} = require("../controllers/userControllers")
 const userRouter = Router();
 
 
@@ -12,5 +12,6 @@ userRouter.get("/followers", getFollowers)
 userRouter.get("/favorites", getFavorites)
 userRouter.post("/favorite", handleFavorite)
 userRouter.put("/profile", updateProfile)
+userRouter.get("/check-relationship", checkRelationship)
 
 module.exports = userRouter

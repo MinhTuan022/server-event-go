@@ -34,8 +34,7 @@ const updateProfile = async (req, res) => {
     existingUser.lastname = lastName || existingUser.lastname;
     existingUser.about = about || existingUser.about;
     existingUser.photo = photo || existingUser.photo;
-    existingUser.updateAt = Date.now()
-
+    existingUser.updateAt = Date.now();
 
     await existingUser.save();
 
@@ -136,7 +135,71 @@ const checkFollowingStatus = async (req, res) => {
     res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
   }
 };
+const checkFollower = async (req, res) => {
+  try {
+    const { userId, targetUserId } = req.query;
+    // console.log(userId, targetUserId)
+    const currentUser = await UserModel.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Người dùng không tồn tại" });
+    }
+    const targetUser = await UserModel.findById(targetUserId);
+    if (!targetUser) {
+      return res
+        .status(404)
+        .json({ message: "Người dùng mục tiêu không tồn tại" });
+    }
+    const isFollower = currentUser.followers.includes(targetUserId);
+    // console.log(isFollowing)
+    res.status(200).json({
+      message: isFollower ? "Theo dõi lại" : "Chưa Theo dõi",
+      data: isFollower,
+    });
+  } catch (error) {
+    console.error("Lỗi khi theo dõi người dùng:", error);
+    res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+  }
+};
+const checkRelationship = async (req, res) => {
+  try {
+    const { userId, targetUserId } = req.query;
+    const currentUser = await UserModel.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Người dùng không tồn tại" });
+    }
+    const targetUser = await UserModel.findById(targetUserId);
+    if (!targetUser) {
+      return res
+        .status(404)
+        .json({ message: "Người dùng mục tiêu không tồn tại" });
+    }
 
+    const isFollowing = currentUser.following.includes(targetUserId);
+    const isFollower = targetUser.following.includes(userId);
+
+    res.status(200).json({
+      message:
+        isFollowing && isFollower
+          ? "Bạn Bè"
+          : isFollowing
+          ? "Đang theo dõi"
+          : isFollower
+          ? "Theo dõi lại"
+          : "Chưa Theo dõi",
+      data:
+        isFollowing && isFollower
+          ? "friend"
+          : isFollowing
+          ? "following"
+          : isFollower
+          ? "follower"
+          : "none",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+  }
+};
 const getFollowers = async (req, res) => {
   try {
     const { targetUserId } = req.query;
@@ -222,5 +285,6 @@ module.exports = {
   getFollowers,
   getFavorites,
   handleFavorite,
-  updateProfile
+  updateProfile,
+  checkRelationship,
 };
