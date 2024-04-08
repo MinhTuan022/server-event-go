@@ -274,9 +274,28 @@ const handleFavorite = async (req, res) => {
   }
 };
 
-const addFavorite = async () => {};
+const getFriend = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const user = await UserModel.findById(userId);
 
-const removeFavorite = async () => {};
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại" });
+    }
+
+    const userFollowing = user.following;
+
+    const friends = await UserModel.find({
+      _id: { $in: userFollowing },
+      following: { $in: [userId] },
+    });
+
+    res.status(200).json({massage:"Thành công", data: friends });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+  }
+};
 module.exports = {
   getAllUser,
   getUserById,
@@ -287,4 +306,5 @@ module.exports = {
   handleFavorite,
   updateProfile,
   checkRelationship,
+  getFriend
 };

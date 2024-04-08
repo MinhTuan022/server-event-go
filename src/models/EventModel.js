@@ -19,10 +19,6 @@ const eventSchema = new mongoose.Schema({
   },
   category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
   attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  // ticketPrice: {
-  //   type: Number,
-  //   required: true
-  // },
   totalTickets: {
     type: Number,
     required: true
@@ -33,12 +29,6 @@ const eventSchema = new mongoose.Schema({
       price: {type: Number}
     }
   ]
-  // tickets: [
-  //   {
-  //     type: mongoose.Schema.Types.ObjectId,
-  //     ref: "Ticket",
-  //   },
-  // ],
 });
 
 eventSchema.index({ position: "2dsphere" });

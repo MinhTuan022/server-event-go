@@ -7,7 +7,8 @@ const createTicket = async (req, res) => {
   try {
     const ticketData = req.body;
     // console.log({ eventId, userId, quantity, totalPrice, status });
-    console.log(ticketData);
+    // console.log(ticketData);
+    let ticket; 
     const existingTicket = await TicketModel.findOne({
       eventId: ticketData.eventId,
       userId: ticketData.userId,
@@ -17,8 +18,9 @@ const createTicket = async (req, res) => {
       existingTicket.quantity += ticketData.quantity;
       existingTicket.totalPrice += ticketData.totalPrice;
       await existingTicket.save();
+      ticket = existingTicket
     } else {
-      const ticket = new TicketModel({
+      const newTicket = new TicketModel({
         // eventId,
         // userId,
         // quantity,
@@ -26,7 +28,7 @@ const createTicket = async (req, res) => {
         // status,
         ...ticketData,
       });
-      console.log(ticket);
+      // console.log(ticket);
       const event = await EventModel.findById(ticketData.eventId);
       // const user = Us
       if (!event) {
@@ -34,10 +36,11 @@ const createTicket = async (req, res) => {
       }
       event.attendees.push(ticketData.userId);
       await event.save();
-      await ticket.save();
+      await newTicket.save();
+      ticket = newTicket
     }
-
-    res.status(200).json({ message: "Success" });
+    const ticketInfo = await TicketModel.findById(ticket._id).populate("eventId", "title location startTime endTime photoUrl");
+    res.status(200).json({ message: "Success", data: ticketInfo });
   } catch (error) {
     res.status(500).json({ message: error });
   }

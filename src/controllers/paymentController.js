@@ -19,6 +19,7 @@ const createPayment = async (req, res) => {
           items: [
             {
               name: name,
+              sku: "Item SKU",
               price: price,
               currency: "USD",
               quantity: quantity,
@@ -49,6 +50,8 @@ const createPayment = async (req, res) => {
     }
   });
 };
+
+
 
 const paymentSuccess = async (req, res) => {
   res.send("Success");

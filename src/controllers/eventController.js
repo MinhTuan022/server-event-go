@@ -2,6 +2,8 @@
 const mongoose = require("mongoose");
 const Event = require("../models/EventModel");
 const UserModel = require("../models/UserModel");
+const CategoryModel = require("../models/CategoryModel");
+
 
 // Route POST để thêm mới sự kiện
 const addEvent = async (req, res) => {
@@ -89,18 +91,24 @@ function deg2rad(deg) {
 }
 
 const getEvent = async (req, res) => {
-  const { lat, long, distance, date, limit } = req.query;
+  const { lat, long, distance, date, limit, category } = req.query;
   try {
     let query = {};
     if (date) {
       query.startTime = { $gte: new Date(date) };
     }
-
+    if (category) {
+      const categoryObj = await CategoryModel.findOne({ key: category }); // Find category by name
+      if (categoryObj) {
+        query.category = categoryObj._id; // Filter by category ID
+      } else {
+        res.status(400).json({ message: "Category not found" });
+        return;
+      }
+    }
     const eventList = await Event.find(query)
       .sort({ startTime: 1 })
       .limit(limit ?? 0)
-      // .populate("organizer", "name  photo")
-      // .populate("attendees", "name  followers photo");
 
     if (lat && long && distance) {
       const filteredEvents = eventList.filter((event) => {
