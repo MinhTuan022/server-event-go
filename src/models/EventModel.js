@@ -4,13 +4,13 @@ const eventSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   address: { type: String, required: true },
-  full_address: { type: String, required: true },
+  fullAddress: { type: String, required: true },
   geometry: {
     type: { type: String, enum: ["Point"], required: true },
     coordinates: { type: [Number], required: true },
   },
   images: [{ type: String }],
-  photoUrl: { type: String },
+  photoEvent: { type: String },
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
   organizer: {
@@ -20,13 +20,7 @@ const eventSchema = new mongoose.Schema({
   },
   category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
   attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  ticketTypes: [
-    {
-      typeTicket: {type: String,},
-      price: {type: Number},
-      quantity: {type: Number}
-    }
-  ]
+  tickets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' }],
 });
 
 eventSchema.index({ position: "2dsphere" });

@@ -25,7 +25,6 @@ const UserSchema = new mongoose.Schema({
   },
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   createdAt: {
     type: Date,
