@@ -9,8 +9,7 @@ const eventSchema = new mongoose.Schema({
     type: { type: String, enum: ["Point"], required: true },
     coordinates: { type: [Number], required: true },
   },
-  images: [{ type: String }],
-  photoEvent: { type: String },
+  photoEvent: { type: String,  required: true},
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
   organizer: {
@@ -23,7 +22,7 @@ const eventSchema = new mongoose.Schema({
   tickets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' }],
 });
 
-eventSchema.index({ position: "2dsphere" });
+eventSchema.index({ geometry: "2dsphere" });
 
 const Event = mongoose.model("Event", eventSchema);
 

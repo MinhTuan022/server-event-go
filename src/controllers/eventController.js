@@ -1,9 +1,9 @@
 // Import các mô hình và các module cần
 const mongoose = require("mongoose");
-const Event = require("../models/EventModel");
+const EventModel = require("../models/EventModel");
+const TicketModel = require("../models/TicketModel");
 const UserModel = require("../models/UserModel");
 const CategoryModel = require("../models/CategoryModel");
-
 
 // Route POST để thêm mới sự kiện
 const addEvent = async (req, res) => {
@@ -14,35 +14,52 @@ const addEvent = async (req, res) => {
     const {
       title,
       description,
-      location,
+      address,
+      fullAddress,
       startTime,
       endTime,
       organizer,
-      photoUrl,
+      photoEvent,
       category,
-      position,
-      ticketTypes,
-      totalTickets
+      geometry,
+      tickets
     } = req.body;
-    const newEvent = new Event({
+
+    if (!tickets || !Array.isArray(tickets)) {
+      throw new Error("Tickets must be provided as an array.");
+    }
+    const newEvent = new EventModel({
       title,
       description,
-      location,
+      address,
+      fullAddress,
       startTime,
       endTime,
       organizer,
-      photoUrl,
+      photoEvent,
       category,
-      position,
-      ticketTypes,
-      totalTickets
+      geometry,
     });
-    await newEvent.save({ session });
+    const event = await newEvent.save({ session });
 
-    const userId = organizer;
-    const user = await UserModel.findById(userId).session(session);
-    user.events.push(newEvent._id);
-    await user.save({ session });
+    const ticketPromises = tickets.map(async (ticketInfo) => {
+      const newTicket = new TicketModel({
+        eventId: event._id,
+        ticketType: ticketInfo.ticketType,
+        price: ticketInfo.price,
+        quantity: ticketInfo.quantity,
+      });
+
+      return await newTicket.save({ session });
+    });
+
+    const savedTickets = await Promise.all(ticketPromises);
+
+    // Lưu trữ ObjectId của các loại vé vào sự kiện
+    event.tickets = savedTickets.map(ticket => ticket._id);
+
+    // Lưu trữ sự kiện đã cập nhật vào cơ sở dữ liệu
+    await event.save({ session });
 
     await session.commitTransaction();
     session.endSession();
@@ -59,7 +76,7 @@ const addEvent = async (req, res) => {
 const getEventById = async (req, res) => {
   const Id = req.params.eventId;
   try {
-    const event = await Event.findById(Id);
+    const event = await EventModel.findById(Id).populate("tickets", "ticketType price quantity");
     // .populate("organizer", "name email")
     // .populate("attendees", "name followers");
     if (!event) {
@@ -98,7 +115,7 @@ const getEvent = async (req, res) => {
       query.startTime = { $gte: new Date(date) };
     }
     if (category) {
-      const categoryObj = await CategoryModel.findOne({ key: category }); // Find category by name
+      const categoryObj = await CategoryModel.findOne({ categoryName: category }); // Find category by name
       if (categoryObj) {
         query.category = categoryObj._id; // Filter by category ID
       } else {
@@ -106,17 +123,17 @@ const getEvent = async (req, res) => {
         return;
       }
     }
-    const eventList = await Event.find(query)
+    const eventList = await EventModel.find(query).populate("tickets", "ticketType price quantity")
       .sort({ startTime: 1 })
-      .limit(limit ?? 0)
+      .limit(limit ?? 0);
 
     if (lat && long && distance) {
       const filteredEvents = eventList.filter((event) => {
         const eventDistance = calculateDistance(
           lat,
           long,
-          event.position.coordinates[1],
-          event.position.coordinates[0]
+          event.geometry.coordinates[1],
+          event.geometry.coordinates[0]
         );
         return eventDistance <= distance; // Check if distance is less than or equal to 5km
       });

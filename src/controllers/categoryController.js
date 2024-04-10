@@ -13,8 +13,8 @@ const getAllCategory = async (req, res) => {
 
 const addCategory = async (req, res) => {
   try {
-    const { name } = req.body;
-    const newCategory = new CategoryModel({ name });
+    const { categoryName } = req.body;
+    const newCategory = new CategoryModel({ categoryName });
     await newCategory.save();
 
     res.status(200).json({ message: "Successfully", data: newCategory });

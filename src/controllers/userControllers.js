@@ -55,7 +55,7 @@ const updateProfile = async (req, res) => {
 const getUserById = async (req, res) => {
   const { userId } = req.query;
   try {
-    const user = await UserModel.findById(userId).populate("events");
+    const user = await UserModel.findById(userId);
     // .populate("following", "name email");
     res.status(200).json({ data: user });
   } catch (error) {
