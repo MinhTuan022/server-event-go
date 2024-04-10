@@ -19,7 +19,6 @@ const createPayment = async (req, res) => {
           items: [
             {
               name: name,
-              sku: "Item SKU",
               price: price,
               currency: "USD",
               quantity: quantity,
@@ -54,35 +53,35 @@ const createPayment = async (req, res) => {
 
 
 const paymentSuccess = async (req, res) => {
-  res.send("Success");
+  // res.send("Success");
 
-  // const payerId = req.query.PayerID;
-  // const paymentId = req.query.paymentId;
+  const payerId = req.query.PayerID;
+  const paymentId = req.query.paymentId;
 
-  // const execute_payment_json = {
-  //   payer_id: payerId,
-  // };
+  const execute_payment_json = {
+    payer_id: payerId,
+  };
 
-  // paypal.payment.execute(paymentId, execute_payment_json, function (
-  //   error,
-  //   payment
-  // ) {
-  //   if (error) {
-  //     console.error(JSON.stringify(error));
-  //     return res.redirect("/paypal/cancel");
-  //   } else {
-  //     // Return ticket information to the user upon successful payment
-  //     const ticketInfo = {
-  //       id:payerId,
-  //       ticketNumber: payment.id,
-  //       itemName: payment.transactions[0].item_list.items[0].name,
-  //       totalPrice: payment.transactions[0].amount.total,
-  //       currency: payment.transactions[0].amount.currency,
-  //       description: payment.transactions[0].description,
-  //     };
-  //     return res.status(200).json({ message: "Success", data: ticketInfo });
-  //   }
-  // });
+  paypal.payment.execute(paymentId, execute_payment_json, function (
+    error,
+    payment
+  ) {
+    if (error) {
+      console.error(JSON.stringify(error));
+      return res.redirect("/paypal/cancel");
+    } else {
+      // Return ticket information to the user upon successful payment
+      const ticketInfo = { 
+        id:payerId,
+        ticketNumber: payment.id,
+        itemName: payment.transactions[0].item_list.items[0].name,
+        totalPrice: payment.transactions[0].amount.total,
+        currency: payment.transactions[0].amount.currency,
+        description: payment.transactions[0].description,
+      };
+      return res.status(200).json({ message: "Success", data: ticketInfo });
+    }
+  });
 };
 
 const paymentCancel = async (req, res) => {
