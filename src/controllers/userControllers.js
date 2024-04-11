@@ -226,7 +226,7 @@ const getFavorites = async (req, res) => {
     const userFavorites = await UserModel.findById(
       userId,
       "favorites"
-    ).populate("favorites");
+    );
     if (!userFavorites) {
       return res.status(404).json({ message: "User not found" });
     }

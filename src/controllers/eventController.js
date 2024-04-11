@@ -22,7 +22,7 @@ const addEvent = async (req, res) => {
       photoEvent,
       category,
       geometry,
-      tickets
+      tickets,
     } = req.body;
 
     if (!tickets || !Array.isArray(tickets)) {
@@ -56,7 +56,7 @@ const addEvent = async (req, res) => {
     const savedTickets = await Promise.all(ticketPromises);
 
     // Lưu trữ ObjectId của các loại vé vào sự kiện
-    event.tickets = savedTickets.map(ticket => ticket._id);
+    event.tickets = savedTickets.map((ticket) => ticket._id);
 
     // Lưu trữ sự kiện đã cập nhật vào cơ sở dữ liệu
     await event.save({ session });
@@ -76,7 +76,10 @@ const addEvent = async (req, res) => {
 const getEventById = async (req, res) => {
   const Id = req.params.eventId;
   try {
-    const event = await EventModel.findById(Id).populate("tickets", "ticketType price quantity");
+    const event = await EventModel.findById(Id).populate(
+      "tickets",
+      "ticketType price quantity"
+    );
     // .populate("organizer", "name email")
     // .populate("attendees", "name followers");
     if (!event) {
@@ -115,7 +118,9 @@ const getEvent = async (req, res) => {
       query.startTime = { $gte: new Date(date) };
     }
     if (category) {
-      const categoryObj = await CategoryModel.findOne({ categoryName: category }); // Find category by name
+      const categoryObj = await CategoryModel.findOne({
+        categoryName: category,
+      }); // Find category by name
       if (categoryObj) {
         query.category = categoryObj._id; // Filter by category ID
       } else {
@@ -123,7 +128,8 @@ const getEvent = async (req, res) => {
         return;
       }
     }
-    const eventList = await EventModel.find(query).populate("tickets", "ticketType price quantity")
+    const eventList = await EventModel.find(query)
+      .populate("tickets", "ticketType price quantity")
       .sort({ startTime: 1 })
       .limit(limit ?? 0);
 
@@ -166,4 +172,19 @@ const getGoing = async (req, res) => {
   }
 };
 
-module.exports = { addEvent, getEventById, getEvent, getGoing };
+const getFavoriteOfUser = async (req, res) => {
+  try {
+    const { ids } = req.query;
+    const eventIds = ids.split(",");
+
+    const events = await EventModel.find({ _id: { $in: eventIds } }).populate("tickets", "ticketType price quantity")
+
+    res.status(200).json({
+      message: "Successfully",
+      data: events,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+module.exports = { addEvent, getEventById, getEvent, getGoing, getFavoriteOfUser };

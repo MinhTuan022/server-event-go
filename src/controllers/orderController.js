@@ -1,5 +1,5 @@
-const mongoose = require("mongoose")
-const OrderModel = require("../models/OrderModel")
+const mongoose = require("mongoose");
+const OrderModel = require("../models/OrderModel");
 const EventModel = require("../models/EventModel");
 const UserModel = require("../models/UserModel");
 const TicketModel = require("../models/TicketModel");
@@ -8,27 +8,20 @@ const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
     // console.log({ eventId, userId, quantity, totalPrice, status });
-    let order; 
+    let order;
     const existingOrder = await OrderModel.findOne({
       eventId: orderData.eventId,
       userId: orderData.userId,
-      ticketId: orderData.ticketId
+      ticketId: orderData.ticketId,
     });
     // console.log(existingTicket)
     if (existingOrder) {
       existingOrder.quantity += orderData.quantity;
       existingOrder.totalPrice += orderData.totalPrice;
       await existingOrder.save();
-      order = existingOrder
+      order = existingOrder;
     } else {
-      const newOrder = new OrderModel({
-        // eventId,
-        // userId,
-        // quantity,
-        // totalPrice,
-        // status,
-        ...orderData,
-      });
+      const newOrder = new OrderModel(orderData);
       // console.log(ticket);
       const event = await EventModel.findById(orderData.eventId);
       if (!event) {
@@ -37,9 +30,12 @@ const createOrder = async (req, res) => {
       event.attendees.push(orderData.userId);
       await event.save();
       await newOrder.save();
-      order = newOrder
+      order = newOrder;
     }
-    const orderInfo = await OrderModel.findById(order._id).populate("eventId", "title address startTime endTime photoEvent");
+    const orderInfo = await OrderModel.findById(order._id).populate(
+      "eventId",
+      "title address startTime endTime photoEvent"
+    );
     res.status(200).json({ message: "Success", data: orderInfo });
   } catch (error) {
     res.status(500).json({ message: error });
@@ -74,8 +70,8 @@ const getOrder = async (req, res) => {
         status: "Cancelled",
       }).populate("eventId", "title location startTime endTime photoUrl");
 
-      res.status(200).json({ message: "Succesfully", data:orderCancelled });
-    }else {
+      res.status(200).json({ message: "Succesfully", data: orderCancelled });
+    } else {
       res.status(200).json({ message: "Get all Ticket", data: orderList });
     }
   } catch (error) {

@@ -6,7 +6,11 @@ const orderSchema = new mongoose.Schema({
   ticketId: { type: mongoose.Schema.Types.ObjectId, ref: "Ticket" },
   quantity: Number,
   totalPrice: Number,
-  status: String,
+  status: {
+    type: String,
+    enum: ["Pending", "Paid", "Completed", "Cancelled"],
+    default: "Pending",
+  },
   createdAt: {
     type: Date,
     default: Date.now,
