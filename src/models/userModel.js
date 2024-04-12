@@ -26,6 +26,7 @@ const UserSchema = new mongoose.Schema({
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
+  fcmTokens: [{ type: String }],
   createdAt: {
     type: Date,
     default: Date.now,

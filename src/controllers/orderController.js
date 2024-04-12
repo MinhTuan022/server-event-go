@@ -9,18 +9,18 @@ const createOrder = async (req, res) => {
     const orderData = req.body;
     // console.log({ eventId, userId, quantity, totalPrice, status });
     let order;
-    const existingOrder = await OrderModel.findOne({
-      eventId: orderData.eventId,
-      userId: orderData.userId,
-      ticketId: orderData.ticketId,
-    });
-    // console.log(existingTicket)
-    if (existingOrder) {
-      existingOrder.quantity += orderData.quantity;
-      existingOrder.totalPrice += orderData.totalPrice;
-      await existingOrder.save();
-      order = existingOrder;
-    } else {
+    // const existingOrder = await OrderModel.findOne({
+    //   eventId: orderData.eventId,
+    //   userId: orderData.userId,
+    //   ticketId: orderData.ticketId,
+    // });
+    // // console.log(existingTicket)
+    // if (existingOrder) {
+    //   existingOrder.quantity += orderData.quantity;
+    //   existingOrder.totalPrice += orderData.totalPrice;
+    //   await existingOrder.save();
+    //   order = existingOrder;
+    // } else {
       const newOrder = new OrderModel(orderData);
       // console.log(ticket);
       const event = await EventModel.findById(orderData.eventId);
@@ -31,7 +31,7 @@ const createOrder = async (req, res) => {
       await event.save();
       await newOrder.save();
       order = newOrder;
-    }
+    // }
     const orderInfo = await OrderModel.findById(order._id).populate(
       "eventId",
       "title address startTime endTime photoEvent"
@@ -47,28 +47,28 @@ const getOrder = async (req, res) => {
     const { status, userId } = req.query;
     const orderList = await OrderModel.find().populate(
       "eventId",
-      "title location startTime endTime photoEvent"
+      "title address startTime endTime photoEvent"
     );
 
     if (userId && status && status === "Paid") {
       const orderPaid = await OrderModel.find({
         userId: userId,
         status: "Paid",
-      }).populate("eventId", "title location startTime endTime photoEvent");
+      }).populate("eventId", "title address startTime endTime photoEvent");
 
       res.status(200).json({ message: "Succesfully", data: orderPaid });
     } else if (userId && status && status === "Completed") {
       const orderCompleted = await OrderModel.find({
         userId: userId,
         status: "Completed",
-      }).populate("eventId", "title location startTime endTime photoUrl");
+      }).populate("eventId", "title address startTime endTime photoEvent");
 
       res.status(200).json({ message: "Succesfully", data: orderCompleted });
     } else if (userId && status && status === "Cancelled") {
       const orderCancelled = await OrderModel.find({
         userId: userId,
         status: "Cancelled",
-      }).populate("eventId", "title location startTime endTime photoUrl");
+      }).populate("eventId", "title address startTime endTime photoEvent");
 
       res.status(200).json({ message: "Succesfully", data: orderCancelled });
     } else {

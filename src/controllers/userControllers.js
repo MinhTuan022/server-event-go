@@ -223,10 +223,7 @@ const getFollowers = async (req, res) => {
 const getFavorites = async (req, res) => {
   const { userId } = req.query;
   try {
-    const userFavorites = await UserModel.findById(
-      userId,
-      "favorites"
-    );
+    const userFavorites = await UserModel.findById(userId, "favorites");
     if (!userFavorites) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -290,11 +287,21 @@ const getFriend = async (req, res) => {
       following: { $in: [userId] },
     });
 
-    res.status(200).json({massage:"Thành công", data: friends });
+    res.status(200).json({ massage: "Thành công", data: friends });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
   }
+};
+
+const updateFcmToken = async (req, res) => {
+  try {
+    const { uid, fcmTokens } = req.body;
+    await UserModel.findByIdAndUpdate(uid, {
+      fcmTokens,
+    });
+    res.status(200).json({ message: "hihi", data: [] });
+  } catch (error) {}
 };
 module.exports = {
   getAllUser,
@@ -306,5 +313,6 @@ module.exports = {
   handleFavorite,
   updateProfile,
   checkRelationship,
-  getFriend
+  getFriend,
+  updateFcmToken,
 };

@@ -184,6 +184,7 @@ const login = asyncHandle(async (req, res) => {
       email: existingUser.email,
       name: existingUser.name ?? "",
       accessToken: await getJsonWebToken(email, existingUser.id),
+      fcmTokens: existingUser.fcmTokens ?? []
     },
   });
 });
@@ -222,7 +223,7 @@ const loginSocial = asyncHandle(async (req, res) => {
       accessToken: user.accessToken,
       id: user._id,
       email: user.email,
-      // fcmTokens: user.fcmTokens,
+      fcmTokens: user.fcmTokens ?? [],
       photo: user.photo,
       name: user.name,
       favorites: user.favorites ?? []

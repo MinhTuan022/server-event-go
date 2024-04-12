@@ -12,8 +12,8 @@ const createPayment = async (req, res) => {
       payment_method: "paypal",
     },
     redirect_urls: {
-      return_url: "http://192.168.76.235:3001/paypal/success",
-      cancel_url: "http://192.168.76.235:3001/paypal/cancel",
+      return_url: "http://192.168.1.106:3001/paypal/success",
+      cancel_url: "http://192.168.1.106:3001/paypal/cancel",
     },
     transactions: [
       {
@@ -56,7 +56,7 @@ const createPayment = async (req, res) => {
 const paymentSuccess = async (req, res) => {
   const payerId = req.query.PayerID;
   const paymentId = req.query.paymentId;
-  // const orderId = req.body.orderId; // Trích xuất orderId từ req.body
+
 
   const execute_payment_json = {
     payer_id: payerId,
@@ -71,6 +71,7 @@ const paymentSuccess = async (req, res) => {
         return res.redirect("/paypal/cancel");
       } else {
         try {
+          console.log(payment)
           // Trích xuất thông tin về vé đã mua
           const orderId = payment.transactions[0].description.split('#')[1];
           const quantity = payment.transactions[0].item_list.items[0].quantity;
