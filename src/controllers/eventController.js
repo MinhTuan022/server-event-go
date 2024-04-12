@@ -74,9 +74,9 @@ const addEvent = async (req, res) => {
 };
 
 const getEventById = async (req, res) => {
-  const Id = req.params.eventId;
+  const { id } = req.query;
   try {
-    const event = await EventModel.findById(Id).populate(
+    const event = await EventModel.findById(id).populate(
       "tickets",
       "ticketType price quantity"
     );
@@ -85,12 +85,27 @@ const getEventById = async (req, res) => {
     if (!event) {
       return res.status(404).json({ message: "Sự kiện không tồn tại." });
     }
-    res.status(200).json(event);
+    res.status(200).json({ message: "Success", data: event });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+const getEventByOrganizer = async (req, res) => {
+  const { id } = req.query;
+  try {
+    const event = await EventModel.find({organizer: id}).populate(
+      "tickets",
+      "ticketType price quantity"
+    );
 
+    if (!event) {
+      return res.status(404).json({ message: "Sự kiện không tồn tại." });
+    }
+    res.status(200).json({ message: "Success", data: event });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Earth radius in kilometers
   const dLat = deg2rad(lat2 - lat1);
@@ -177,7 +192,10 @@ const getFavoriteOfUser = async (req, res) => {
     const { ids } = req.query;
     const eventIds = ids.split(",");
 
-    const events = await EventModel.find({ _id: { $in: eventIds } }).populate("tickets", "ticketType price quantity")
+    const events = await EventModel.find({ _id: { $in: eventIds } }).populate(
+      "tickets",
+      "ticketType price quantity"
+    );
 
     res.status(200).json({
       message: "Successfully",
@@ -187,4 +205,11 @@ const getFavoriteOfUser = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-module.exports = { addEvent, getEventById, getEvent, getGoing, getFavoriteOfUser };
+module.exports = {
+  addEvent,
+  getEventById,
+  getEvent,
+  getGoing,
+  getFavoriteOfUser,
+  getEventByOrganizer
+};
