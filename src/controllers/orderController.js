@@ -21,16 +21,16 @@ const createOrder = async (req, res) => {
     //   await existingOrder.save();
     //   order = existingOrder;
     // } else {
-      const newOrder = new OrderModel(orderData);
-      // console.log(ticket);
-      const event = await EventModel.findById(orderData.eventId);
-      if (!event) {
-        return res.status(404).json({ message: "Event không tồn tại" });
-      }
-      event.attendees.push(orderData.userId);
-      await event.save();
-      await newOrder.save();
-      order = newOrder;
+    const newOrder = new OrderModel(orderData);
+    // console.log(ticket);
+    const event = await EventModel.findById(orderData.eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Event không tồn tại" });
+    }
+    event.attendees.push(orderData.userId);
+    await event.save();
+    await newOrder.save();
+    order = newOrder;
     // }
     const orderInfo = await OrderModel.findById(order._id).populate(
       "eventId",
@@ -92,8 +92,19 @@ const getOrder = async (req, res) => {
 //     res.status(500).json({ message: "Fail" });
 //   }
 // };
+const deleteOrder = async (req, res) => {
+  try {
+    const {orderId} = req.body
+    console.log(orderId)
+    await OrderModel.findByIdAndDelete(orderId)
+    res.status(200).json("Xóa Thành Công")
+  } catch (error) {
+    res.status(500).json({ message: "Fail" });
+  }
+};
 module.exports = {
   createOrder,
   getOrder,
   // getTicketByUser,
+  deleteOrder
 };

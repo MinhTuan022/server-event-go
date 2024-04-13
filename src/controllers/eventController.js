@@ -64,7 +64,7 @@ const addEvent = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    res.status(200).json(newEvent);
+    res.status(200).json({ message: "Tạo mới thành công", data: newEvent._id });
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
@@ -223,5 +223,5 @@ module.exports = {
   getGoing,
   getFavoriteOfUser,
   getEventByOrganizer,
-  searchEvent
+  searchEvent,
 };

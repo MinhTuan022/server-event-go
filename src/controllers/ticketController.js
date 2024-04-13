@@ -3,6 +3,9 @@ const EventModel = require("../models/EventModel");
 const UserModel = require("../models/UserModel");
 const TicketModel = require("../models/TicketModel");
 
+const getTicket = async () => {
+  
+}
 
 module.exports = {
 
