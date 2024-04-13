@@ -93,7 +93,7 @@ const getEventById = async (req, res) => {
 const getEventByOrganizer = async (req, res) => {
   const { id } = req.query;
   try {
-    const event = await EventModel.find({organizer: id}).populate(
+    const event = await EventModel.find({ organizer: id }).populate(
       "tickets",
       "ticketType price quantity"
     );
@@ -105,7 +105,7 @@ const getEventByOrganizer = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}
+};
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Earth radius in kilometers
   const dLat = deg2rad(lat2 - lat1);
@@ -205,11 +205,23 @@ const getFavoriteOfUser = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+const searchEvent = async (req, res) => {
+  try {
+    const { title } = req.query;
+    const events = await EventModel.find({ $text: { $search: title } });
+
+    res.status(200).json({ message: "Search", data: events });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 module.exports = {
   addEvent,
   getEventById,
   getEvent,
   getGoing,
   getFavoriteOfUser,
-  getEventByOrganizer
+  getEventByOrganizer,
+  searchEvent
 };

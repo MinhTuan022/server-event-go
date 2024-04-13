@@ -22,6 +22,7 @@ const eventSchema = new mongoose.Schema({
   tickets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' }],
 });
 
+eventSchema.index({title: 'text'})
 eventSchema.index({ geometry: "2dsphere" });
 
 const Event = mongoose.model("Event", eventSchema);
