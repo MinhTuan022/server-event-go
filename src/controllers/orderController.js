@@ -53,7 +53,7 @@ const getOrder = async (req, res) => {
     if (userId && status && status === "Paid") {
       const orderPaid = await OrderModel.find({
         userId: userId,
-        status: "Paid",
+        status: {$in: ["Paid", "Pending"] },
       }).populate("eventId", "title address startTime endTime photoEvent");
 
       res.status(200).json({ message: "Succesfully", data: orderPaid });
@@ -94,17 +94,54 @@ const getOrder = async (req, res) => {
 // };
 const deleteOrder = async (req, res) => {
   try {
-    const {orderId} = req.body
-    console.log(orderId)
-    await OrderModel.findByIdAndDelete(orderId)
-    res.status(200).json("Xóa Thành Công")
+    const { orderId } = req.body;
+    console.log(orderId);
+
+    // Tìm đơn đặt hàng cần xóa
+    const order = await OrderModel.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Đơn đặt hàng không tồn tại" });
+    }
+
+    // Xóa ID người dùng khỏi mảng attendees trong sự kiện tương ứng
+    const event = await EventModel.findById(order.eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Sự kiện không tồn tại" });
+    }
+
+    const userIdIndex = event.attendees.indexOf(order.userId);
+    if (userIdIndex !== -1) {
+      event.attendees.splice(userIdIndex, 1);
+      await event.save();
+    }
+
+    // Kiểm tra trạng thái của đơn đặt hàng
+    if (order.status === "Pending") {
+      // Nếu trạng thái là pending, xóa đơn đặt hàng
+      await OrderModel.findByIdAndDelete(orderId);
+    } else if (order.status === "Paid") {
+      // Nếu trạng thái là paid, cập nhật lại số lượng vé cho sự kiện
+      const ticket = await TicketModel.findById(order.ticketId);
+      if (!ticket) {
+        return res.status(404).json({ message: "Đơn đặt hàng không tồn tại" });
+      }
+      ticket.quantity += order.quantity;
+      await ticket.save();
+      // Sau đó xóa đơn đặt hàng
+      // await OrderModel.findByIdAndDelete(orderId);
+      order.status = "Cancelled";
+      await order.save();
+    }
+
+    res.status(200).json({ message: "Xóa thành công" });
   } catch (error) {
-    res.status(500).json({ message: "Fail" });
+    console.error("Lỗi khi xóa đơn đặt hàng:", error);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
 module.exports = {
   createOrder,
   getOrder,
   // getTicketByUser,
-  deleteOrder
+  deleteOrder,
 };

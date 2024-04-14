@@ -76,10 +76,11 @@ const addEvent = async (req, res) => {
 const getEventById = async (req, res) => {
   const { id } = req.query;
   try {
-    const event = await EventModel.findById(id).populate(
-      "tickets",
-      "ticketType price quantity"
-    );
+    const event = await EventModel.findById(id)
+    // .populate(
+    //   "tickets",
+    //   "ticketType price quantity"
+    // );
     // .populate("organizer", "name email")
     // .populate("attendees", "name followers");
     if (!event) {
