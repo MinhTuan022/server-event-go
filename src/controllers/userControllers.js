@@ -1,10 +1,10 @@
 const UserModel = require("../models/UserModel");
 const { JWT } = require("google-auth-library");
+const { handleSendNotification } = require("../utils/notificationHandler");
 
 const getAllUser = async (req, res) => {
   try {
-    const access = await getAccessToken()
-    console.log(access)
+
     const userList = await UserModel.find();
     // console.log(userList);
     res
@@ -306,49 +306,67 @@ const updateFcmToken = async (req, res) => {
     res.status(200).json({ message: "hihi", data: [] });
   } catch (error) {}
 };
-const getAccessToken = () => {
-  return new Promise(function (resolve, reject) {
-    const key = require("../eventhub-firebase-mess.json");
-    const jwtClient = new JWT(
-      key.client_email,
-      null,
-      key.private_key,
-      ["https://www.googleapis.com/auth/cloud-platform"],
-      null
-    );
-    jwtClient.authorize(function (err, tokens) {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(tokens.access_token);
-    });
-  });
-};
-const handleSendNotification = async (fcmToken, body, title, subtitle) => {
-  var request = require("request");
-  var options = {
-    method: "POST",
-    url: "https://fcm.googleapis.com/v1/projects/eventhub-416509/messages:send",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getAccessToken()}`,
-    },
-    body: JSON.stringify({
-      message: {
-        token: fcmToken,
-        notification: {
-          body,
-          title,
-          subtitle
-        },
-      },
-    }),
-  };
-  request(options, function (error, response) {
-    if (error) throw new Error(error);
-    // console.log(response.body);
-  });
+// const getAccessToken = () => {
+//   return new Promise(function (resolve, reject) {
+//     const key = require("../eventhub-firebase-mess.json");
+//     const jwtClient = new JWT(
+//       key.client_email,
+//       null,
+//       key.private_key,
+//       ["https://www.googleapis.com/auth/cloud-platform"],
+//       null
+//     );
+//     jwtClient.authorize(function (err, tokens) {
+//       if (err) {
+//         reject(err);
+//         return;
+//       }
+//       resolve(tokens.access_token);
+//     });
+//   });
+// };
+// const handleSendNotification = async (fcmToken, body, title, notiData) => {
+//   const axios = require("axios");
+//   let data = JSON.stringify({
+//     message: {
+//       token: fcmToken,
+//       notification: {
+//         body: body,
+//         title: title,
+//       },
+//       data: notiData,
+//     },
+//   });
+
+//   let config = {
+//     method: "post",
+//     maxBodyLength: Infinity,
+//     url: "https://fcm.googleapis.com/v1/projects/eventhub-416509/messages:send",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${await getAccessToken()}`,
+//     },
+//     data: data,
+//   };
+
+//   axios
+//     .request(config)
+//     .then((response) => {
+//       console.log(JSON.stringify(response.data));
+//     })
+//     .catch((error) => {
+//       console.log(error);
+//     });
+// };
+
+const sendNotification = async (req, res) => {
+  try {
+    const { fcmToken, body, title, data } = req.body;
+    await handleSendNotification(fcmToken, body, title, data);
+    res.status(200).json("thành công");
+  } catch (error) {
+    console.log(error);
+  }
 };
 module.exports = {
   getAllUser,
@@ -362,4 +380,5 @@ module.exports = {
   checkRelationship,
   getFriend,
   updateFcmToken,
+  sendNotification,
 };

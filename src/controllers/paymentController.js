@@ -1,4 +1,8 @@
 const paypal = require("paypal-rest-sdk");
+const axios = require("axios");
+const qs = require("qs");
+const { handleSendNotification } = require("../utils/notificationHandler");
+
 const OrderModel = require("../models/OrderModel");
 const EventModel = require("../models/EventModel");
 const PaymentModel = require("../models/PaymentModel");
@@ -57,7 +61,6 @@ const paymentSuccess = async (req, res) => {
   const payerId = req.query.PayerID;
   const paymentId = req.query.paymentId;
 
-
   const execute_payment_json = {
     payer_id: payerId,
   };
@@ -71,9 +74,11 @@ const paymentSuccess = async (req, res) => {
         return res.redirect("/paypal/cancel");
       } else {
         try {
-          console.log(payment)
+          console.log(payment);
+
+          const transactionId = await getTransactionDetails(paymentId)
           // Trích xuất thông tin về vé đã mua
-          const orderId = payment.transactions[0].description.split('#')[1];
+          const orderId = payment.transactions[0].description.split("#")[1];
           const quantity = payment.transactions[0].item_list.items[0].quantity;
 
           // Cập nhật trạng thái của đơn hàng thành "Đã thanh toán"
@@ -90,13 +95,15 @@ const paymentSuccess = async (req, res) => {
             // Không tìm thấy vé trong cơ sở dữ liệu
             return res.status(404).json({ message: "Ticket not found." });
           }
-          
+
           // Kiểm tra số lượng vé còn lại trong kho
           if (ticket.quantity < quantity) {
             // Số lượng vé được mua lớn hơn số lượng vé còn lại trong kho
-            return res.status(400).json({ message: "Not enough tickets available." });
+            return res
+              .status(400)
+              .json({ message: "Not enough tickets available." });
           }
-          
+
           // Cập nhật số lượng vé trong kho
           const updatedTicket = await TicketModel.findByIdAndUpdate(
             order.ticketId,
@@ -109,7 +116,7 @@ const paymentSuccess = async (req, res) => {
             orderId: orderId,
             paymentMethod: "PayPal",
             amount: payment.transactions[0].amount.total,
-            transactionId: payment.id,
+            transactionId: transactionId,
           });
           await newPayment.save();
 
@@ -128,9 +135,114 @@ const paymentSuccess = async (req, res) => {
 const paymentCancel = async (req, res) => {
   res.send("Cancel");
 };
+const paymentRefund = async (req, res) => {
+    const { orderId } = req.body;
+
+    // Truy xuất thông tin đơn hàng
+    const order = await OrderModel.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    if (order.status === "Paid") {
+      const payment = await PaymentModel.findOne({ orderId: orderId });
+      if (!payment) {
+        return res.status(404).json({ message: "Payment not found." });
+      }
+
+      const refundRequest = {
+        amount: {
+          total: payment.amount,
+          currency: "USD",
+        },
+      };
+
+      paypal.sale.refund(
+        payment.transactionId,
+        refundRequest,
+        async (error, refund) => {
+          if (error) {
+            console.log(error);
+          } else {
+            try {
+              await PaymentModel.findByIdAndDelete(payment._id);
+
+              await handleSendNotification(
+                "d_tvr6cWQhC0UOou4eZ536:APA91bGmUJ0ZWOgChiUV3SDj8tRu6Uvov22X97YUc21DcInnGZ7ewKRMy_fImUOV-CCXaFaXitYP0HdVGhNtmTpz22U1yYHinMOCqiADtUkgxm75gSzi6M86P8153lJBBFWQ5t78uNQ4",
+                "Refund Successful",
+                "Your refund has been processed successfully.",
+                {id: order.userId}
+              );
+
+              return res.status(200).json({ message: "success" });
+            } catch (error) {
+              return res.status(500).json({ message: "Fail" });
+            }
+          }
+        }
+      );
+    }else {
+      return res.status(200).json({ message: "success" });
+    }
+
+};
+const getAccessTokenPaypal = async () => {
+  try {
+    const base64encoded = Buffer.from(
+      `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`
+    ).toString("base64");
+    const data = qs.stringify({
+      grant_type: "client_credentials",
+    });
+
+    const config = {
+      method: "post",
+      maxBodyLength: Infinity,
+      url: "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${base64encoded}`,
+      },
+      data: data,
+    };
+
+    const response = await axios.request(config);
+    return response.data.access_token;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const getTransactionDetails = async (paymentId) => {
+  try {
+    const accessToken = await getAccessTokenPaypal();
+    const config = {
+      method: "get",
+      maxBodyLength: Infinity,
+      url: `https://api.sandbox.paypal.com/v1/payments/payment/${paymentId}`,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    const response = await axios.request(config);
+    return response.data.transactions[0].related_resources[0].sale.id;
+    console.log(
+      JSON.stringify(response.data.transactions[0].related_resources[0].sale.id)
+    );
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+// Gọi hàm để lấy chi tiết giao dịch khi cần
+// getTransactionDetails('PAYID-MYOLE7A9E205733NX646332L');
 
 module.exports = {
   createPayment,
   paymentCancel,
   paymentSuccess,
+  paymentRefund,
 };
