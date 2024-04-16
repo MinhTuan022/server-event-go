@@ -10,6 +10,7 @@ const paypal = require('paypal-rest-sdk');
 const paymentRouter = require("./src/routers/paymentRouter");
 const ticketRouter = require("./src/routers/ticketRoute");
 const orderRouter = require("./src/routers/orderRouter");
+const notificationRouter = require("./src/routers/notificationRouter");
 
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/category", categoryRouter)
 app.use("/paypal", paymentRouter)
 app.use("/ticket", ticketRouter)
 app.use("/order", orderRouter)
+app.use("/notification", notificationRouter)
 
 
 connectDB();

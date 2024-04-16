@@ -13,6 +13,7 @@ const {
   getFriend,
   updateFcmToken,
   sendNotification,
+  deleteFcmToken,
 } = require("../controllers/userControllers");
 const userRouter = Router();
 
@@ -28,5 +29,6 @@ userRouter.get("/check-relationship", checkRelationship);
 userRouter.get("/friend", getFriend);
 userRouter.post("/update-fcmtoken", updateFcmToken);
 userRouter.post("/send-notification", sendNotification)
+userRouter.delete("/delete-fcmToken", deleteFcmToken)
 
 module.exports = userRouter;

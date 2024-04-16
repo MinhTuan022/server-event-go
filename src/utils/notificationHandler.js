@@ -2,6 +2,17 @@
 const axios = require("axios");
 const { JWT } = require("google-auth-library");
 
+const sendPushNotification = async (fcmTokens, body, title, data ) => {
+  try {
+    await Promise.all(
+      fcmTokens.map(async (fcmToken) => {
+        await handleSendNotification(fcmToken, body, title, data);
+      })
+    );
+  } catch (error) {
+    console.log(error)
+  }
+}
 const handleSendNotification = async (fcmToken, body, title, notiData) => {
   let data = JSON.stringify({
     message: {
@@ -55,4 +66,4 @@ const getAccessToken = () => {
   });
 };
 
-module.exports = { handleSendNotification };
+module.exports = { handleSendNotification, sendPushNotification };

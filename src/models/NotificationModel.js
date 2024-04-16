@@ -3,8 +3,9 @@ const mongoose = require("mongoose");
 const notificationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   title: String,
-  bode: String,
+  body: String,
   isRead: { type: Boolean, default: false },
+  type: String,
   createdAt: { type: Date, default: Date.now },
 });
 

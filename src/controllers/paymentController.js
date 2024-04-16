@@ -1,12 +1,17 @@
 const paypal = require("paypal-rest-sdk");
 const axios = require("axios");
 const qs = require("qs");
-const { handleSendNotification } = require("../utils/notificationHandler");
+const {
+  handleSendNotification,
+  sendPushNotification,
+} = require("../utils/notificationHandler");
 
 const OrderModel = require("../models/OrderModel");
 const EventModel = require("../models/EventModel");
+const NotificatioModel = require("../models/NotificationModel")
 const PaymentModel = require("../models/PaymentModel");
 const TicketModel = require("../models/TicketModel");
+const UserModel = require("../models/UserModel");
 const createPayment = async (req, res) => {
   const { name, price, quantity, orderId } = req.body;
   console.log(req.body);
@@ -76,7 +81,7 @@ const paymentSuccess = async (req, res) => {
         try {
           console.log(payment);
 
-          const transactionId = await getTransactionDetails(paymentId)
+          const transactionId = await getTransactionDetails(paymentId);
           // Trích xuất thông tin về vé đã mua
           const orderId = payment.transactions[0].description.split("#")[1];
           const quantity = payment.transactions[0].item_list.items[0].quantity;
@@ -120,8 +125,21 @@ const paymentSuccess = async (req, res) => {
           });
           await newPayment.save();
 
-          // Trả về thông tin vé và đơn hàng cho người dùng
-          // ...
+          const user = await UserModel.findById(order.userId);
+          sendPushNotification(
+            user.fcmTokens,
+            "Thanh Toán Thành Công",
+            "Đơn hàng của bạn đã thanh toán thành công"
+          );
+          
+          const newNoti = new NotificatioModel({
+            userId: order.userId,
+            body: "Đơn hàng của bạn đã thanh toán thành công",
+            title: "Thanh Toán Thành Công",
+            type:"payment-success"
+          })
+
+          await newNoti.save()
           return res.status(200).json({ message: "success" });
         } catch (error) {
           console.error(error);
@@ -136,55 +154,54 @@ const paymentCancel = async (req, res) => {
   res.send("Cancel");
 };
 const paymentRefund = async (req, res) => {
-    const { orderId } = req.body;
+  const { orderId } = req.body;
 
-    // Truy xuất thông tin đơn hàng
-    const order = await OrderModel.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found." });
+  // Truy xuất thông tin đơn hàng
+  const order = await OrderModel.findById(orderId);
+  if (!order) {
+    return res.status(404).json({ message: "Order not found." });
+  }
+
+  if (order.status === "Paid") {
+    const payment = await PaymentModel.findOne({ orderId: orderId });
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found." });
     }
 
-    if (order.status === "Paid") {
-      const payment = await PaymentModel.findOne({ orderId: orderId });
-      if (!payment) {
-        return res.status(404).json({ message: "Payment not found." });
-      }
+    const refundRequest = {
+      amount: {
+        total: payment.amount,
+        currency: "USD",
+      },
+    };
 
-      const refundRequest = {
-        amount: {
-          total: payment.amount,
-          currency: "USD",
-        },
-      };
+    paypal.sale.refund(
+      payment.transactionId,
+      refundRequest,
+      async (error, refund) => {
+        if (error) {
+          console.log(error);
+        } else {
+          try {
+            await PaymentModel.findByIdAndDelete(payment._id);
 
-      paypal.sale.refund(
-        payment.transactionId,
-        refundRequest,
-        async (error, refund) => {
-          if (error) {
-            console.log(error);
-          } else {
-            try {
-              await PaymentModel.findByIdAndDelete(payment._id);
+            await handleSendNotification(
+              "d_tvr6cWQhC0UOou4eZ536:APA91bGmUJ0ZWOgChiUV3SDj8tRu6Uvov22X97YUc21DcInnGZ7ewKRMy_fImUOV-CCXaFaXitYP0HdVGhNtmTpz22U1yYHinMOCqiADtUkgxm75gSzi6M86P8153lJBBFWQ5t78uNQ4",
+              "Refund Successful",
+              "Your refund has been processed successfully.",
+              { id: order.userId }
+            );
 
-              await handleSendNotification(
-                "d_tvr6cWQhC0UOou4eZ536:APA91bGmUJ0ZWOgChiUV3SDj8tRu6Uvov22X97YUc21DcInnGZ7ewKRMy_fImUOV-CCXaFaXitYP0HdVGhNtmTpz22U1yYHinMOCqiADtUkgxm75gSzi6M86P8153lJBBFWQ5t78uNQ4",
-                "Refund Successful",
-                "Your refund has been processed successfully.",
-                {id: order.userId}
-              );
-
-              return res.status(200).json({ message: "success" });
-            } catch (error) {
-              return res.status(500).json({ message: "Fail" });
-            }
+            return res.status(200).json({ message: "success" });
+          } catch (error) {
+            return res.status(500).json({ message: "Fail" });
           }
         }
-      );
-    }else {
-      return res.status(200).json({ message: "success" });
-    }
-
+      }
+    );
+  } else {
+    return res.status(200).json({ message: "success" });
+  }
 };
 const getAccessTokenPaypal = async () => {
   try {

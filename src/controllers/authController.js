@@ -194,14 +194,18 @@ const loginSocial = asyncHandle(async (req, res) => {
   const existingUser = await UserModel.findOne({ email: userInfo.email });
   let user;
   if (existingUser) {
-    await UserModel.findByIdAndUpdate(existingUser._id, {
-      // ...userInfo,
-      updateAt: Date.now(),
-    });
+    console.log(userInfo)
+    if (!existingUser.fcmTokens.includes(userInfo.fcmTokens)) {
+      // Nếu chưa tồn tại, thêm userInfo.fcmToken vào mảng fcmTokens
+      existingUser.fcmTokens.push(userInfo.fcmTokens);
+    }
+    // Cập nhật updatedAt và lưu lại người dùng
+    existingUser.updateAt = Date.now();
+    await existingUser.save();
     existingUser.save();
     user = existingUser;
     console.log("huu", user);
-    // user.accessToken = await getJsonWebToken(userInfo.email, userInfo.id);
+
 
   } else {
     const newUser = new UserModel({
@@ -213,7 +217,6 @@ const loginSocial = asyncHandle(async (req, res) => {
     user = newUser ;
     console.log("user", user._id);
 
-    // user.accessToken = await getJsonWebToken(userInfo.email, user._id);
   }
   user.accessToken = await getJsonWebToken(userInfo.email, user._id);
 
