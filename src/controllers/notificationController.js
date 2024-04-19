@@ -3,7 +3,7 @@ const NotificationModel = require("../models/NotificationModel");
 const getNotification = async (req, res) => {
   try {
     const { userId } = req.query;
-    const notiList = await NotificationModel.find({ userId });
+    const notiList = await NotificationModel.find({ userId }).sort({createdAt: -1});
     if (!notiList) {
       return res.status(400).json("Không có thông báo nào");
     }
@@ -16,7 +16,8 @@ const getNotification = async (req, res) => {
 
 const updateIsRead = async (req, res) => {
   try {
-    const { id } = req.query;
+    const { id } = req.body;
+    
     const notification = await NotificationModel.findById(id);
     if (!notification) {
       return res.status(400).json("Không có thông báo nào");

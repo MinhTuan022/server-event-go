@@ -29,7 +29,7 @@ app.use("/auth", authRouter);
 app.use("/user", userRouter);
 app.use("/event", eventRouter);
 app.use("/category", categoryRouter)
-app.use("/paypal", paymentRouter)
+app.use("/payment", paymentRouter)
 app.use("/ticket", ticketRouter)
 app.use("/order", orderRouter)
 app.use("/notification", notificationRouter)

@@ -55,8 +55,9 @@ const getOrder = async (req, res) => {
         status: { $in: ["Paid", "Pending"] },
       }).populate(
         "eventId",
-        "title address startTime endTime photoEvent organizer"
-      );
+        "title address startTime endTime photoEvent organizer")
+      .populate("ticketId", "price")
+    ;
 
       res.status(200).json({ message: "Succesfully", data: orderPaid });
     } else if (userId && status && status === "Completed") {
