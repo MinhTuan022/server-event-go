@@ -1,6 +1,9 @@
 const UserModel = require("../models/UserModel");
 const { JWT } = require("google-auth-library");
-const { handleSendNotification, sendPushNotification } = require("../utils/notificationHandler");
+const {
+  handleSendNotification,
+  sendPushNotification,
+} = require("../utils/notificationHandler");
 
 const getAllUser = async (req, res) => {
   try {
@@ -361,19 +364,21 @@ const updateFcmToken = async (req, res) => {
 const deleteFcmToken = async (req, res) => {
   try {
     const { fcmToken, userId } = req.body;
-    console.log(req.body);
+    // console.log(req.body);
     const user = await UserModel.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
+    // console.log("ssssae", user)
     const index = user.fcmTokens.indexOf(fcmToken);
 
     if (index === -1) {
       return res.status(404).json({ message: "FcmToken not found" });
     }
-    user.splice(index, 1);
+    console.log(index);
+    user.fcmTokens.splice(index, 1);
     await user.save();
+
     res.status(200).json({ message: "Thành công", data: user.fcmTokens });
   } catch (error) {
     res.status(500).json("Lỗi");
@@ -381,11 +386,14 @@ const deleteFcmToken = async (req, res) => {
 };
 const sendNotification = async (req, res) => {
   try {
-    const { fcmTokens, body, title, data } = req.body;
-    if (!Array.isArray(fcmTokens)) {
-      throw new Error("fcmTokens must be an array");
+    const { userId, body, title, data } = req.body;
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(400).json("Không có user");
     }
-   sendPushNotification(fcmTokens, body, title, data);
+    // const fcmTokens = ;
+    sendPushNotification(user.fcmTokens, body, title, data);
     res.status(200).json("thành công");
   } catch (error) {
     console.log(error);

@@ -128,7 +128,7 @@ const forgotPassword = asyncHandle(async (req, res) => {
 });
 
 const register = asyncHandle(async (req, res) => {
-  const { email, name, password } = req.body;
+  const { email, name, password, fcmTokens } = req.body;
 
   const existingUser = await UserModel.findOne({ email });
 
@@ -143,6 +143,7 @@ const register = asyncHandle(async (req, res) => {
     email,
     name: name ? name : "",
     password: hashedPassword,
+    fcmTokens: fcmTokens ?? [],
   });
 
   await newUser.save();
@@ -154,12 +155,15 @@ const register = asyncHandle(async (req, res) => {
       id: newUser._id,
       name: name ?? "",
       accessToken: await getJsonWebToken(email, newUser._id),
+      fcmTokens: newUser.fcmTokens ?? [],
+      favorites: newUser.favorites ?? [],
+
     },
   });
 });
 
 const login = asyncHandle(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, fcmToken } = req.body;
 
   const existingUser = await UserModel.findOne({ email });
 
@@ -169,7 +173,11 @@ const login = asyncHandle(async (req, res) => {
 
     throw new Error("User not found !");
   }
-
+  if (!existingUser.fcmTokens.includes(fcmToken)) {
+    // Nếu chưa tồn tại, thêm userInfo.fcmToken vào mảng fcmTokens
+    existingUser.fcmTokens.push(fcmToken);
+  }
+  await existingUser.save();
   const isMatchPassword = await bcrypt.compare(password, existingUser.password);
 
   if (!isMatchPassword) {
@@ -184,7 +192,9 @@ const login = asyncHandle(async (req, res) => {
       email: existingUser.email,
       name: existingUser.name ?? "",
       accessToken: await getJsonWebToken(email, existingUser.id),
-      fcmTokens: existingUser.fcmTokens ?? []
+      fcmTokens: existingUser.fcmTokens ?? [],
+      favorites: existingUser.favorites ?? [],
+
     },
   });
 });
@@ -194,7 +204,7 @@ const loginSocial = asyncHandle(async (req, res) => {
   const existingUser = await UserModel.findOne({ email: userInfo.email });
   let user;
   if (existingUser) {
-    console.log(userInfo)
+    console.log(userInfo);
     if (!existingUser.fcmTokens.includes(userInfo.fcmTokens)) {
       // Nếu chưa tồn tại, thêm userInfo.fcmToken vào mảng fcmTokens
       existingUser.fcmTokens.push(userInfo.fcmTokens);
@@ -205,8 +215,6 @@ const loginSocial = asyncHandle(async (req, res) => {
     existingUser.save();
     user = existingUser;
     console.log("huu", user);
-
-
   } else {
     const newUser = new UserModel({
       email: userInfo.email,
@@ -214,9 +222,8 @@ const loginSocial = asyncHandle(async (req, res) => {
       ...userInfo,
     });
     await newUser.save();
-    user = newUser ;
+    user = newUser;
     console.log("user", user._id);
-
   }
   user.accessToken = await getJsonWebToken(userInfo.email, user._id);
 
@@ -229,7 +236,7 @@ const loginSocial = asyncHandle(async (req, res) => {
       fcmTokens: user.fcmTokens ?? [],
       photo: user.photo,
       name: user.name,
-      favorites: user.favorites ?? []
+      favorites: user.favorites ?? [],
     },
   });
 });

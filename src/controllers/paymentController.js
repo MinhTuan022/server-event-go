@@ -8,7 +8,7 @@ const {
 
 const OrderModel = require("../models/OrderModel");
 const EventModel = require("../models/EventModel");
-const NotificatioModel = require("../models/NotificationModel")
+const NotificatioModel = require("../models/NotificationModel");
 const PaymentModel = require("../models/PaymentModel");
 const TicketModel = require("../models/TicketModel");
 const UserModel = require("../models/UserModel");
@@ -86,30 +86,23 @@ const paymentSuccess = async (req, res) => {
           const orderId = payment.transactions[0].description.split("#")[1];
           const quantity = payment.transactions[0].item_list.items[0].quantity;
 
-          // Cập nhật trạng thái của đơn hàng thành "Đã thanh toán"
           const order = await OrderModel.findByIdAndUpdate(
             orderId,
             { status: "Paid" },
             { new: true }
           );
 
-          // Cập nhật số lượng còn lại của vé trong cơ sở dữ liệu
           const ticket = await TicketModel.findById(order.ticketId);
 
           if (!ticket) {
-            // Không tìm thấy vé trong cơ sở dữ liệu
             return res.status(404).json({ message: "Ticket not found." });
           }
-
-          // Kiểm tra số lượng vé còn lại trong kho
           if (ticket.quantity < quantity) {
-            // Số lượng vé được mua lớn hơn số lượng vé còn lại trong kho
             return res
               .status(400)
               .json({ message: "Not enough tickets available." });
           }
 
-          // Cập nhật số lượng vé trong kho
           const updatedTicket = await TicketModel.findByIdAndUpdate(
             order.ticketId,
             { $inc: { quantity: -quantity } },
@@ -131,15 +124,15 @@ const paymentSuccess = async (req, res) => {
             "Thanh Toán Thành Công",
             "Đơn hàng của bạn đã thanh toán thành công"
           );
-          
+
           const newNoti = new NotificatioModel({
             userId: order.userId,
             body: "Đơn hàng của bạn đã thanh toán thành công",
             title: "Thanh Toán Thành Công",
-            type:"payment-success"
-          })
+            type: "payment-success",
+          });
 
-          await newNoti.save()
+          await newNoti.save();
           return res.status(200).json({ message: "success" });
         } catch (error) {
           console.error(error);
@@ -253,13 +246,25 @@ const getTransactionDetails = async (paymentId) => {
     return null;
   }
 };
+const getPayment = async (req, res) => {
+  try {
+    const { orderId } = req.query;
+    const payment = await PaymentModel.findOne({ orderId });
 
-// Gọi hàm để lấy chi tiết giao dịch khi cần
-// getTransactionDetails('PAYID-MYOLE7A9E205733NX646332L');
+    if(!payment){
+      return res.status(400).json("Không có thông tin thanh toán")
+    }
+
+    res.status(200).json({message:"thành công", data: payment})
+  } catch (error) {
+    res.status(500).json({message: "Lỗi"})
+  }
+};
 
 module.exports = {
   createPayment,
   paymentCancel,
   paymentSuccess,
   paymentRefund,
+  getPayment
 };

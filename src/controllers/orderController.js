@@ -32,10 +32,9 @@ const createOrder = async (req, res) => {
     await newOrder.save();
     order = newOrder;
     // }
-    const orderInfo = await OrderModel.findById(order._id).populate(
-      "eventId",
-      "title address startTime endTime photoEvent"
-    );
+    const orderInfo = await OrderModel.findById(order._id)
+      .populate("eventId", "title address startTime endTime photoEvent")
+      .populate("ticketId", "price");
     res.status(200).json({ message: "Success", data: orderInfo });
   } catch (error) {
     res.status(500).json({ message: error });
@@ -47,28 +46,37 @@ const getOrder = async (req, res) => {
     const { status, userId } = req.query;
     const orderList = await OrderModel.find().populate(
       "eventId",
-      "title address startTime endTime photoEvent"
+      "title address startTime endTime photoEvent organizer"
     );
 
     if (userId && status && status === "Paid") {
       const orderPaid = await OrderModel.find({
         userId: userId,
-        status: {$in: ["Paid", "Pending"] },
-      }).populate("eventId", "title address startTime endTime photoEvent");
+        status: { $in: ["Paid", "Pending"] },
+      }).populate(
+        "eventId",
+        "title address startTime endTime photoEvent organizer"
+      );
 
       res.status(200).json({ message: "Succesfully", data: orderPaid });
     } else if (userId && status && status === "Completed") {
       const orderCompleted = await OrderModel.find({
         userId: userId,
         status: "Completed",
-      }).populate("eventId", "title address startTime endTime photoEvent");
+      }).populate(
+        "eventId",
+        "title address startTime endTime photoEvent organizer"
+      );
 
       res.status(200).json({ message: "Succesfully", data: orderCompleted });
     } else if (userId && status && status === "Cancelled") {
       const orderCancelled = await OrderModel.find({
         userId: userId,
         status: "Cancelled",
-      }).populate("eventId", "title address startTime endTime photoEvent");
+      }).populate(
+        "eventId",
+        "title address startTime endTime photoEvent organizer"
+      );
 
       res.status(200).json({ message: "Succesfully", data: orderCancelled });
     } else {
@@ -139,9 +147,35 @@ const deleteOrder = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+const updateStatusCompleted = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    const order = await OrderModel.findById(orderId);
+
+    const event = await EventModel.findById(order.eventId);
+
+    const eventStartTime = new Date(event.startTime).getTime();
+
+    // Thời gian hiện tại của người dùng
+    const currentTime = new Date().getTime();
+
+    // Số milliseconds trong một ngày
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (currentTime + oneDay >= eventStartTime && order.status === "Paid") {
+      order.status = "Completed";
+      await order.save();
+    }
+
+    res.status(200).json({ message: "update thành công", data: order });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
 module.exports = {
   createOrder,
   getOrder,
   // getTicketByUser,
   deleteOrder,
+  updateStatusCompleted
 };

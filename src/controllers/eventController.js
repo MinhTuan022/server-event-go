@@ -76,7 +76,7 @@ const addEvent = async (req, res) => {
 const getEventById = async (req, res) => {
   const { id } = req.query;
   try {
-    const event = await EventModel.findById(id)
+    const event = await EventModel.findById(id);
     // .populate(
     //   "tickets",
     //   "ticketType price quantity"
@@ -172,6 +172,7 @@ const getEvent = async (req, res) => {
 const getGoing = async (req, res) => {
   try {
     const { ids } = req.query;
+    // console.log(ids);
     const userIds = ids.split(",");
 
     const users = await UserModel.find(
