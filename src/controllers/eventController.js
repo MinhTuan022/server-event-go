@@ -47,6 +47,7 @@ const addEvent = async (req, res) => {
         eventId: event._id,
         ticketType: ticketInfo.ticketType,
         price: ticketInfo.price,
+        initialQuantity:ticketInfo.quantity,
         quantity: ticketInfo.quantity,
       });
 

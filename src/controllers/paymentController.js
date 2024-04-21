@@ -282,15 +282,30 @@ const paymentRefund = async (req, res) => {
       vnp_IpAddr: vnp_IpAddr,
       vnp_SecureHash: vnp_SecureHash,
     };
-    console.log(dataObj);
-    axios
-      .post(vnp_Api, dataObj)
-      .then((response) => {
-        console.log("d", response.data);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    // axios
+    //   .post(vnp_Api, dataObj)
+    //   .then((response) => {
+    //     console.log("d", response.data);
+    //   })
+    //   .catch((error) => {
+    //     console.error(error);
+    //   });
+
+    const user = await UserModel.findById(order.userId);
+    sendPushNotification(
+      user.fcmTokens,
+      "Vé của bạn đã được hủy, số tiền thanh toán sẽ được hoàn lại",
+      "Hủy vé thành công"
+    );
+    const event = await EventModel.findById(order.eventId);
+    const newNoti = new NotificatioModel({
+      userId: order.userId,
+      body: `Bạn đã hủy vé sự kiện ${event.title}, số tiền thanh toán sẽ được hoàn lại`,
+      title: "Hủy vé thành công",
+      type: "ticket",
+    });
+    await newNoti.save();
+    return res.status(200).json({ message: "success" });
   }
 
   // Truy xuất thông tin đơn hàng

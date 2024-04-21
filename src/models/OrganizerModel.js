@@ -1,13 +1,13 @@
 const { default: mongoose } = require("mongoose");
 
-const UserSchema = new mongoose.Schema({
+const OrganizerSchema = new mongoose.Schema({
   name: {
     type: String,
   },
-  firstname: {
+  organizationName: {
     type: String,
   },
-  lastname: {
+  organizationAddress: {
     type: String,
   },
   about: {
@@ -23,9 +23,7 @@ const UserSchema = new mongoose.Schema({
   photo: {
     type: String,
   },
-  following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   fcmTokens: [{ type: String }],
   createdAt: {
     type: Date,
@@ -37,5 +35,5 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
-const UserModel = mongoose.model("User", UserSchema);
-module.exports = UserModel;
+const OrganizerModel = mongoose.model("Organizer", OrganizerSchema);
+module.exports = OrganizerModel;

@@ -4,6 +4,7 @@ const ticketSchema = new mongoose.Schema({
   eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Event" },
   ticketType: { type: String, required: true },
   price: { type: Number, default: 0 },
+  initialQuantity: { type: Number, required: true },
   quantity: { type: Number, required: true },
 });
 

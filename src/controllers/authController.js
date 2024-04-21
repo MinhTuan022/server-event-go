@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const asyncHandle = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const OrganizerModel = require("../models/OrganizerModel");
 require("dotenv").config();
 
 const getJsonWebToken = async (email, id) => {
@@ -157,11 +158,46 @@ const register = asyncHandle(async (req, res) => {
       accessToken: await getJsonWebToken(email, newUser._id),
       fcmTokens: newUser.fcmTokens ?? [],
       favorites: newUser.favorites ?? [],
-
     },
   });
 });
 
+const registerOrganizer = asyncHandle(async (req, res) => {
+  const { email, name, password, address, organization, fcmTokens } = req.body;
+
+  const existingOrganizer = await OrganizerModel.findOne({ email });
+
+  if (existingOrganizer) {
+    res.status(400);
+    throw new Error("Organizer has already exits !");
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+  const newOrganizer = new OrganizerModel({
+    email,
+    name: name ? name : "",
+    password: hashedPassword,
+    fcmTokens: fcmTokens ?? [],
+    organizationAddress: address,
+    organizationName: organization,
+  });
+
+  await newOrganizer.save();
+
+  res.status(200).json({
+    message: "Register new user successfully",
+    data: {
+      email: newOrganizer.email,
+      id: newOrganizer._id,
+      name: name ?? "",
+      organization: newOrganizer.organizationName,
+      accessToken: await getJsonWebToken(email, newOrganizer._id),
+      fcmTokens: newOrganizer.fcmTokens ?? [],
+      favorites: newOrganizer.favorites ?? [],
+    },
+  });
+});
 const login = asyncHandle(async (req, res) => {
   const { email, password, fcmToken } = req.body;
 
@@ -194,10 +230,26 @@ const login = asyncHandle(async (req, res) => {
       accessToken: await getJsonWebToken(email, existingUser.id),
       fcmTokens: existingUser.fcmTokens ?? [],
       favorites: existingUser.favorites ?? [],
-
     },
   });
 });
+
+const checkUser = async (req, res) => {
+  try {
+    const { email } = req.query;
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(403).json({ message: "User đã tồn tại !" });
+    }
+    const existingOrganizer = await OrganizerModel.findOne({ email });
+    if (existingOrganizer) {
+      return res.status(403).json({ message: "Organizer đã tồn tại !" });
+    }
+    res.status(200).json({ message: "Chưa có user hoặc organizer" });
+  } catch (error) {
+    return res.status(500).json({ message: "Lõi" });
+  }
+};
 const loginSocial = asyncHandle(async (req, res) => {
   const userInfo = req.body;
   console.log(userInfo);
@@ -246,4 +298,6 @@ module.exports = {
   verification,
   forgotPassword,
   loginSocial,
+  checkUser,
+  registerOrganizer,
 };
