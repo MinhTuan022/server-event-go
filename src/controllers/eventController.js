@@ -4,6 +4,13 @@ const EventModel = require("../models/EventModel");
 const TicketModel = require("../models/TicketModel");
 const UserModel = require("../models/UserModel");
 const CategoryModel = require("../models/CategoryModel");
+const OrderModel = require("../models/OrderModel");
+const NotificationModel = require("../models/NotificationModel");
+const {
+  handleSendNotification,
+  sendPushNotification,
+} = require("../utils/notificationHandler");
+const { paymentRefund } = require("../utils/refundHandler");
 
 // Route POST để thêm mới sự kiện
 const addEvent = async (req, res) => {
@@ -47,7 +54,7 @@ const addEvent = async (req, res) => {
         eventId: event._id,
         ticketType: ticketInfo.ticketType,
         price: ticketInfo.price,
-        initialQuantity:ticketInfo.quantity,
+        initialQuantity: ticketInfo.quantity,
         quantity: ticketInfo.quantity,
       });
 
@@ -219,6 +226,53 @@ const searchEvent = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+const deleteEvent = async (req, res) => {
+  try {
+    const { eventId } = req.body;
+
+    const event = await EventModel.findByIdAndDelete(eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Sự kiện không tồn tại." });
+    }
+
+    const orders = await OrderModel.find({ eventId: eventId });
+    if (orders.length > 0) {
+      for (const order of orders) {
+        const user = await UserModel.findById(order.userId);
+        if (user) {
+          try {
+            paymentRefund(order._id);
+
+            sendPushNotification(
+              user.fcmTokens,
+              `Xin chào ${user.name}, Sự kiện "${event.title}" mà bạn đã mua vé đã bị hủy.`,
+              "Hủy sự kiện"
+            );
+            const newNotification = new NotificationModel({
+              userId: order.userId,
+              body: `Xin chào ${user.name}, Sự kiện "${event.title}" mà bạn đã mua vé đã bị hủy. Số tiền mà bạn thanh toán sẽ được hoàn lại. Trân trọng, Đội ngũ tổ chức sự kiện.`,
+              title: "Hủy sự kiện",
+              type: "event",
+            });
+            await newNotification.save();
+          } catch (notificationError) {
+            console.error("Lỗi khi gửi thông báo:", notificationError);
+          }
+        }
+      }
+
+      const deletedOrders = await OrderModel.deleteMany({ eventId: eventId });
+      const deletedTickets = await TicketModel.deleteMany({ eventId: eventId });
+    }
+
+    res.status(200).json({ message: "Xóa sự kiện thành công." });
+  } catch (error) {
+    console.error("Lỗi khi xóa sự kiện:", error);
+    res.status(500).json({ message: "Đã xảy ra lỗi khi xóa sự kiện." });
+  }
+};
+
 module.exports = {
   addEvent,
   getEventById,
@@ -227,4 +281,5 @@ module.exports = {
   getFavoriteOfUser,
   getEventByOrganizer,
   searchEvent,
+  deleteEvent,
 };

@@ -11,6 +11,17 @@ const getAllCategory = async (req, res) => {
   }
 };
 
+const getCategory = async (req, res) => {
+  try {
+    const {cateId} = req.query
+    const category = await CategoryModel.findById(cateId);
+    res
+      .status(200)
+      .json({ message: "Get Category Successfully", data: category });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to Get Category" });
+  }
+};
 const addCategory = async (req, res) => {
   try {
     const { categoryName } = req.body;
@@ -25,5 +36,6 @@ const addCategory = async (req, res) => {
 
 module.exports = {
   getAllCategory,
-  addCategory
+  addCategory,
+  getCategory
 }

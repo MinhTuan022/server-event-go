@@ -1,4 +1,8 @@
 const UserModel = require("../models/UserModel");
+const OrganizerModel = require("../models/OrganizerModel");
+const NotificatioModel = require("../models/NotificationModel");
+
+
 const { JWT } = require("google-auth-library");
 const {
   handleSendNotification,
@@ -76,7 +80,7 @@ const handleFollow = async (req, res) => {
     if (!currentUser) {
       return res.status(404).json({ message: "Người dùng không tồn tại" });
     }
-    const targetUser = await UserModel.findById(targetUserId);
+    const targetUser = await OrganizerModel.findById(targetUserId);
     if (!targetUser) {
       return res
         .status(404)
@@ -104,6 +108,22 @@ const handleFollow = async (req, res) => {
       currentUser.following.push(targetUserId);
       // Thêm userId vào danh sách followers của người dùng mục tiêu
       targetUser.followers.push(userId);
+
+      sendPushNotification(
+        targetUser.fcmTokens,
+        "Bạn đã nhận được 1 lượt theo dõi từ người dùng",
+        "Đã có người theo dõi bạn"
+
+      );
+
+      const newNoti = new NotificatioModel({
+        userId: targetUserId,
+        body: "Bạn đã nhận được 1 lượt theo dõi từ người dùng",
+        title: "Đã có người theo dõi bạn",
+        type: "follow",
+      });
+
+      await newNoti.save();
     }
     const followers = targetUser.followers.length;
     // console.log(followers)
@@ -364,12 +384,16 @@ const updateFcmToken = async (req, res) => {
 const deleteFcmToken = async (req, res) => {
   try {
     const { fcmToken, userId } = req.body;
-    // console.log(req.body);
-    const user = await UserModel.findById(userId);
+    let user = await UserModel.findById(userId);
+
+    if (!user) {
+      // Nếu không tìm thấy, tìm trong collection người tổ chức sự kiện
+      user = await OrganizerModel.findById(userId);
+    }
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // console.log("ssssae", user)
     const index = user.fcmTokens.indexOf(fcmToken);
 
     if (index === -1) {

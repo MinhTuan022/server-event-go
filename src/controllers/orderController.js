@@ -231,7 +231,6 @@ const countOrdersPerHour = async (req, res) => {
   }
 };
 
-
 const countCancelledPerHour = async (req, res) => {
   try {
     const { eventId } = req.query;
@@ -404,7 +403,7 @@ const getRevenue = async (req, res) => {
 module.exports = {
   createOrder,
   getOrder,
-countCancelledPerHour,
+  countCancelledPerHour,
   deleteOrder,
   updateStatusCompleted,
   countOrdersPerHour,

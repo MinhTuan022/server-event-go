@@ -1,5 +1,5 @@
 const Router = require("express");
-const { addCategory, getAllCategory } = require("../controllers/categoryController");
+const { addCategory, getAllCategory, getCategory } = require("../controllers/categoryController");
 
 const categoryRouter = Router();
 
@@ -7,6 +7,7 @@ const categoryRouter = Router();
 //   res.send("Hello");
 // });
 categoryRouter.get("/list", getAllCategory)
+categoryRouter.get("/byId", getCategory)
 categoryRouter.post("/add", addCategory)
 
 

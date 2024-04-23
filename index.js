@@ -11,6 +11,7 @@ const paymentRouter = require("./src/routers/paymentRouter");
 const ticketRouter = require("./src/routers/ticketRoute");
 const orderRouter = require("./src/routers/orderRouter");
 const notificationRouter = require("./src/routers/notificationRouter");
+const organizerRouter = require("./src/routers/organizerRouter");
 
 
 const app = express();
@@ -33,6 +34,7 @@ app.use("/payment", paymentRouter)
 app.use("/ticket", ticketRouter)
 app.use("/order", orderRouter)
 app.use("/notification", notificationRouter)
+app.use("/organizer", organizerRouter)
 
 
 connectDB();

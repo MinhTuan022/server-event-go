@@ -4,6 +4,8 @@ const asyncHandle = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const OrganizerModel = require("../models/OrganizerModel");
+const NotificatioModel = require("../models/NotificationModel");
+
 require("dotenv").config();
 
 const getJsonWebToken = async (email, id) => {
@@ -66,7 +68,15 @@ const verification = asyncHandle(async (req, res) => {
 
 const forgotPassword = asyncHandle(async (req, res) => {
   const { email, newPassword } = req.body;
-  const existingUser = await UserModel.findOne({ email });
+  let existingUser = await UserModel.findOne({ email });
+
+  if (!existingUser) {
+    existingUser = await OrganizerModel.findOne({ email });
+  }
+
+  if (!existingUser) {
+    return res.status(404).json({ message: "User not found" });
+  }
 
   const verificationCode = Math.round(1000 + Math.random() * 9000);
 
@@ -93,41 +103,66 @@ const forgotPassword = asyncHandle(async (req, res) => {
           `,
   };
 
-  if (!existingUser) {
-    return res
-      .status(400)
-      .json({ message: `Không tìm thấy tài khoản với email ${email}` });
-  } else {
-    try {
-      // Gửi email
-      await transporter.sendMail(mailOptions);
-      res.status(200).json({
-        message: "Send verification email successfully",
-        data: {
-          verificationCode: verificationCode,
-        },
-      });
-    } catch (error) {
-      //  console.error("Error sending verification email:", error);
-      res.status(500).json({ message: "Failed to send verification email" });
-    }
+  try {
+    // Gửi email
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({
+      message: "Send verification email successfully",
+      data: {
+        verificationCode: verificationCode,
+      },
+    });
+  } catch (error) {
+    //  console.error("Error sending verification email:", error);
+    res.status(500).json({ message: "Failed to send verification email" });
   }
 
-  if (newPassword) {
+  // if (newPassword) {
+  //   const salt = await bcrypt.genSalt(10);
+  //   const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  //   await UserModel.findByIdAndUpdate(existingUser._id, {
+  //     password: hashedPassword,
+  //     isChangePassword: true,
+  //   })
+  //     .then(() => {
+  //       console.log("Done");
+  //     })
+  //     .catch((error) => console.log(error));
+  // }
+});
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    let existingUser = await UserModel.findOne({ email });
+
+    if (!existingUser) {
+      existingUser = await OrganizerModel.findOne({ email });
+    }
+
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await UserModel.findByIdAndUpdate(existingUser._id, {
-      password: hashedPassword,
-      isChangePassword: true,
-    })
-      .then(() => {
-        console.log("Done");
-      })
-      .catch((error) => console.log(error));
-  }
-});
+    existingUser.password = hashedPassword;
+    existingUser.updatedAt = Date.now();
 
+    await existingUser.save();
+    const newNoti = new NotificatioModel({
+      userId: existingUser._id,
+      body: "Bạn đã thay đổi mật khẩu mới",
+      title: "Đổi mật khẩu",
+      type: "account",
+    });
+    await newNoti.save();
+    res.status(200).json({ message: "Thành công" });
+  } catch (error) {
+    res.status(400).json({ message: "Lỗi" });
+  }
+};
 const register = asyncHandle(async (req, res) => {
   const { email, name, password, fcmTokens } = req.body;
 
@@ -200,15 +235,23 @@ const registerOrganizer = asyncHandle(async (req, res) => {
 });
 const login = asyncHandle(async (req, res) => {
   const { email, password, fcmToken } = req.body;
-
-  const existingUser = await UserModel.findOne({ email });
+  let existingUser = await UserModel.findOne({ email });
 
   if (!existingUser) {
-    res.status(403);
-    // .json({ message: "User not found !" });
-
-    throw new Error("User not found !");
+    existingUser = await OrganizerModel.findOne({ email });
   }
+
+  if (!existingUser) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  // const existingUser = await UserModel.findOne({ email });
+
+  // if (!existingUser) {
+  //   res.status(403);
+  //   // .json({ message: "User not found !" });
+
+  //   throw new Error("User not found !");
+  // }
   if (!existingUser.fcmTokens.includes(fcmToken)) {
     // Nếu chưa tồn tại, thêm userInfo.fcmToken vào mảng fcmTokens
     existingUser.fcmTokens.push(fcmToken);
@@ -228,6 +271,7 @@ const login = asyncHandle(async (req, res) => {
       email: existingUser.email,
       name: existingUser.name ?? "",
       accessToken: await getJsonWebToken(email, existingUser.id),
+      organization: existingUser.organizationName ?? "",
       fcmTokens: existingUser.fcmTokens ?? [],
       favorites: existingUser.favorites ?? [],
     },
@@ -300,4 +344,5 @@ module.exports = {
   loginSocial,
   checkUser,
   registerOrganizer,
+  resetPassword,
 };

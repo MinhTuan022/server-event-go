@@ -7,6 +7,7 @@ const {
   getFavoriteOfUser,
   getEventByOrganizer,
   searchEvent,
+  deleteEvent,
 } = require("../controllers/eventController");
 const eventRouter = Router();
 
@@ -17,4 +18,6 @@ eventRouter.get("/", getEvent);
 eventRouter.get("/going", getGoing);
 eventRouter.get("/favorite", getFavoriteOfUser);
 eventRouter.get("/search", searchEvent);
+eventRouter.delete("/delete", deleteEvent);
+
 module.exports = eventRouter;
