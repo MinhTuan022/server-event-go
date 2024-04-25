@@ -14,6 +14,7 @@ const {
   updateFcmToken,
   sendNotification,
   deleteFcmToken,
+  getFollowings,
 } = require("../controllers/userControllers");
 const userRouter = Router();
 
@@ -30,5 +31,6 @@ userRouter.get("/friend", getFriend);
 userRouter.post("/update-fcmtoken", updateFcmToken);
 userRouter.post("/send-notification", sendNotification)
 userRouter.delete("/delete-fcmToken", deleteFcmToken)
+userRouter.get('/following', getFollowings)
 
 module.exports = userRouter;

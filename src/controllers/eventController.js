@@ -11,6 +11,7 @@ const {
   sendPushNotification,
 } = require("../utils/notificationHandler");
 const { paymentRefund } = require("../utils/refundHandler");
+const { query } = require("express");
 
 // Route POST để thêm mới sự kiện
 const addEvent = async (req, res) => {
@@ -144,9 +145,9 @@ const getEvent = async (req, res) => {
     if (category) {
       const categoryObj = await CategoryModel.findOne({
         categoryName: category,
-      }); // Find category by name
+      });
       if (categoryObj) {
-        query.category = categoryObj._id; // Filter by category ID
+        query.category = categoryObj._id;
       } else {
         res.status(400).json({ message: "Category not found" });
         return;
@@ -158,7 +159,11 @@ const getEvent = async (req, res) => {
       .limit(limit ?? 0);
 
     if (lat && long && distance) {
-      const filteredEvents = eventList.filter((event) => {
+      const eventNear = await EventModel.find(query)
+      .populate("tickets", "ticketType price quantity")
+      .limit(limit ?? 0);
+
+      const filteredEvents = eventNear.filter((event) => {
         const eventDistance = calculateDistance(
           lat,
           long,
@@ -219,7 +224,14 @@ const getFavoriteOfUser = async (req, res) => {
 const searchEvent = async (req, res) => {
   try {
     const { title } = req.query;
-    const events = await EventModel.find({ $text: { $search: title } });
+    console.log(req.query);
+    let query = {};
+
+    if (title) {
+      query.title = { $regex: title, $options: "i" };
+    }
+    console.log(query);
+    const events = await EventModel.find(query);
 
     res.status(200).json({ message: "Search", data: events });
   } catch (error) {
@@ -273,6 +285,27 @@ const deleteEvent = async (req, res) => {
   }
 };
 
+const updateEvent = async (req, res) => {
+  try {
+    const { eventId } = req.query;
+    const { title, description } = req.body;
+
+    const updatedEvent = await EventModel.findByIdAndUpdate(
+      eventId,
+      { title, description },
+      { new: true }
+    );
+
+    if (!updatedEvent) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    res.status(200).json({ messgae: "OK", data: updatedEvent });
+  } catch (error) {
+    console.error("Error updating event:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
 module.exports = {
   addEvent,
   getEventById,
@@ -282,4 +315,5 @@ module.exports = {
   getEventByOrganizer,
   searchEvent,
   deleteEvent,
+  updateEvent,
 };

@@ -43,7 +43,7 @@ const updateProfile = async (req, res) => {
     existingUser.lastname = lastName || existingUser.lastname;
     existingUser.about = about || existingUser.about;
     existingUser.photo = photo || existingUser.photo;
-    existingUser.updateAt = Date.now();
+    existingUser.updatedAt = Date.now();
 
     await existingUser.save();
 
@@ -106,7 +106,7 @@ const handleFollow = async (req, res) => {
       }
     } else {
       currentUser.following.push(targetUserId);
-      // Thêm userId vào danh sách followers của người dùng mục tiêu
+
       targetUser.followers.push(userId);
 
       sendPushNotification(
@@ -423,6 +423,26 @@ const sendNotification = async (req, res) => {
     console.log(error);
   }
 };
+
+const getFollowings = async (req, res) => {
+  try {
+    const { ids } = req.query;
+    // console.log(ids);
+    const userIds = ids.split(",");
+
+    const users = await OrganizerModel.find(
+      { _id: { $in: userIds } },
+      // "name followers photo _id"
+    );
+console.log(users)
+    res.status(200).json({
+      message: "Successfully",
+      data: users,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 module.exports = {
   getAllUser,
   getUserById,
@@ -437,4 +457,5 @@ module.exports = {
   updateFcmToken,
   sendNotification,
   deleteFcmToken,
+  getFollowings
 };
