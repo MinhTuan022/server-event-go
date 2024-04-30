@@ -149,175 +149,174 @@ const paymentCancel = async (req, res) => {
 
 const paymentRefund = async (req, res) => {
   const { orderId } = req.body;
-  const payment = await PaymentModel.findOne({ orderId });
-  if (!payment) {
-    return res.status(404).json({ message: "Payment not found." });
-  }
+
   const order = await OrderModel.findById(orderId);
   if (!order) {
     return res.status(404).json({ message: "Order not found." });
   }
 
-  if (payment.paymentMethod === "PayPal") {
-    const refundRequest = {
-      amount: {
-        total: payment.amount,
-        currency: "USD",
-      },
-    };
+  if (order.status === "Paid") {
+    const payment = await PaymentModel.findOne({ orderId });
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found." });
+    }
 
-    paypal.sale.refund(
-      payment.transactionId,
-      refundRequest,
-      async (error, refund) => {
-        if (error) {
-          console.log(error);
-        } else {
-          try {
-            await PaymentModel.findByIdAndDelete(payment._id);
+    if (payment.paymentMethod === "PayPal") {
+      const refundRequest = {
+        amount: {
+          total: payment.amount,
+          currency: "USD",
+        },
+      };
 
-            const user = await UserModel.findById(order.userId);
-            sendPushNotification(
-              user.fcmTokens,
-              "Vé của bạn đã được hủy, số tiền thanh toán sẽ được hoàn lại",
-              "Hủy vé thành công"
-            );
-            const event = await EventModel.findById(order.eventId);
-            const newNoti = new NotificatioModel({
-              userId: order.userId,
-              body: `Bạn đã hủy vé sự kiện ${event.title}, số tiền thanh toán sẽ được hoàn lại`,
-              title: "Hủy vé thành công",
-              type: "ticket",
-            });
-            await newNoti.save();
+      paypal.sale.refund(
+        payment.transactionId,
+        refundRequest,
+        async (error, refund) => {
+          if (error) {
+            console.log(error);
+          } else {
+            try {
+              await PaymentModel.findByIdAndDelete(payment._id);
 
-            return res.status(200).json({ message: "success" });
-          } catch (error) {
-            return res.status(500).json({ message: "Fail" });
+              const user = await UserModel.findById(order.userId);
+              sendPushNotification(
+                user.fcmTokens,
+                "Vé của bạn đã được hủy, số tiền thanh toán sẽ được hoàn lại",
+                "Hủy vé thành công"
+              );
+              const event = await EventModel.findById(order.eventId);
+              const newNoti = new NotificatioModel({
+                userId: order.userId,
+                body: `Bạn đã hủy vé sự kiện ${event.title}, số tiền thanh toán sẽ được hoàn lại`,
+                title: "Hủy vé thành công",
+                type: "ticket",
+              });
+              await newNoti.save();
+
+              return res.status(200).json({ message: "success" });
+            } catch (error) {
+              return res.status(500).json({ message: "Fail" });
+            }
           }
         }
-      }
-    );
+      );
+    } else {
+      process.env.TZ = "Asia/Ho_Chi_Minh";
+      let date = new Date();
+      let transactionDate = moment(date).format("YYYYMMDDHHmmss");
+      let createDate = "20240419183724";
+
+      console.log(createDate);
+      let crypto = require("crypto");
+
+      let vnp_TmnCode = "QVC4CD2K";
+      let secretKey = "PYKEWBFCKXHOLEJQUQENYZDXZXPHWLRY";
+      let vnp_Api =
+        "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
+
+      let vnp_TxnRef = orderId;
+      let vnp_TransactionDate = createDate;
+      let vnp_Amount = order.totalPrice * 100;
+      let vnp_TransactionType = "02";
+      let vnp_CreateBy = "Tuan";
+
+      let currCode = "VND";
+
+      let vnp_RequestId = moment(date).format("HHmmss");
+      let vnp_Version = "2.1.0";
+      let vnp_Command = "refund";
+      let vnp_OrderInfo = "Hoan tien GD ma:" + vnp_TxnRef;
+
+      let vnp_IpAddr =
+        req.headers["x-forwarded-for"] ||
+        req.connection.remoteAddress ||
+        req.socket.remoteAddress ||
+        req.connection.socket.remoteAddress;
+
+      let vnp_CreateDate = moment(date).format("YYYYMMDDHHmmss");
+
+      let vnp_TransactionNo = payment.transactionId;
+
+      let data =
+        vnp_RequestId +
+        "|" +
+        vnp_Version +
+        "|" +
+        vnp_Command +
+        "|" +
+        vnp_TmnCode +
+        "|" +
+        vnp_TransactionType +
+        "|" +
+        vnp_TxnRef +
+        "|" +
+        vnp_Amount +
+        "|" +
+        vnp_TransactionNo +
+        "|" +
+        vnp_TransactionDate +
+        "|" +
+        vnp_CreateBy +
+        "|" +
+        vnp_CreateDate +
+        "|" +
+        vnp_IpAddr +
+        "|" +
+        vnp_OrderInfo;
+      // console.log(data);
+      let hmac = crypto.createHmac("sha512", secretKey);
+      // console.log(hmac);
+      let vnp_SecureHash = hmac
+        .update(Buffer.from(data, "utf-8"))
+        .digest("hex");
+
+      let dataObj = {
+        vnp_RequestId: vnp_RequestId,
+        vnp_Version: vnp_Version,
+        vnp_Command: vnp_Command,
+        vnp_TmnCode: vnp_TmnCode,
+        vnp_TransactionType: vnp_TransactionType,
+        vnp_TxnRef: vnp_TxnRef,
+        vnp_Amount: vnp_Amount,
+        vnp_TransactionNo: vnp_TransactionNo,
+        vnp_CreateBy: vnp_CreateBy,
+        vnp_OrderInfo: vnp_OrderInfo,
+        vnp_TransactionDate: vnp_TransactionDate,
+        vnp_CreateDate: vnp_CreateDate,
+        vnp_IpAddr: vnp_IpAddr,
+        vnp_SecureHash: vnp_SecureHash,
+      };
+      // axios
+      //   .post(vnp_Api, dataObj)
+      //   .then((response) => {
+      //     console.log("d", response.data);
+      //   })
+      //   .catch((error) => {
+      //     console.error(error);
+      //   });
+
+      const user = await UserModel.findById(order.userId);
+      sendPushNotification(
+        user.fcmTokens,
+        "Vé của bạn đã được hủy, số tiền thanh toán sẽ được hoàn lại",
+        "Hủy vé thành công"
+      );
+      const event = await EventModel.findById(order.eventId);
+      const newNoti = new NotificatioModel({
+        userId: order.userId,
+        body: `Bạn đã hủy vé sự kiện ${event.title}, số tiền thanh toán sẽ được hoàn lại`,
+        title: "Hủy vé thành công",
+        type: "ticket",
+      });
+      await newNoti.save();
+      return res.status(200).json({ message: "success" });
+    }
   } else {
-    process.env.TZ = "Asia/Ho_Chi_Minh";
-    let date = new Date();
-    let transactionDate = moment(date).format("YYYYMMDDHHmmss");
-    let createDate = "20240419183724";
-
-    console.log(createDate);
-    let crypto = require("crypto");
-
-    let vnp_TmnCode = "QVC4CD2K";
-    let secretKey = "PYKEWBFCKXHOLEJQUQENYZDXZXPHWLRY";
-    let vnp_Api =
-      "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
-
-    let vnp_TxnRef = orderId;
-    let vnp_TransactionDate = createDate;
-    let vnp_Amount = order.totalPrice * 100;
-    let vnp_TransactionType = "02";
-    let vnp_CreateBy = "Tuan";
-
-    let currCode = "VND";
-
-    let vnp_RequestId = moment(date).format("HHmmss");
-    let vnp_Version = "2.1.0";
-    let vnp_Command = "refund";
-    let vnp_OrderInfo = "Hoan tien GD ma:" + vnp_TxnRef;
-
-    let vnp_IpAddr =
-      req.headers["x-forwarded-for"] ||
-      req.connection.remoteAddress ||
-      req.socket.remoteAddress ||
-      req.connection.socket.remoteAddress;
-
-    let vnp_CreateDate = moment(date).format("YYYYMMDDHHmmss");
-
-    let vnp_TransactionNo = payment.transactionId;
-
-    let data =
-      vnp_RequestId +
-      "|" +
-      vnp_Version +
-      "|" +
-      vnp_Command +
-      "|" +
-      vnp_TmnCode +
-      "|" +
-      vnp_TransactionType +
-      "|" +
-      vnp_TxnRef +
-      "|" +
-      vnp_Amount +
-      "|" +
-      vnp_TransactionNo +
-      "|" +
-      vnp_TransactionDate +
-      "|" +
-      vnp_CreateBy +
-      "|" +
-      vnp_CreateDate +
-      "|" +
-      vnp_IpAddr +
-      "|" +
-      vnp_OrderInfo;
-    // console.log(data);
-    let hmac = crypto.createHmac("sha512", secretKey);
-    // console.log(hmac);
-    let vnp_SecureHash = hmac.update(Buffer.from(data, "utf-8")).digest("hex");
-
-    let dataObj = {
-      vnp_RequestId: vnp_RequestId,
-      vnp_Version: vnp_Version,
-      vnp_Command: vnp_Command,
-      vnp_TmnCode: vnp_TmnCode,
-      vnp_TransactionType: vnp_TransactionType,
-      vnp_TxnRef: vnp_TxnRef,
-      vnp_Amount: vnp_Amount,
-      vnp_TransactionNo: vnp_TransactionNo,
-      vnp_CreateBy: vnp_CreateBy,
-      vnp_OrderInfo: vnp_OrderInfo,
-      vnp_TransactionDate: vnp_TransactionDate,
-      vnp_CreateDate: vnp_CreateDate,
-      vnp_IpAddr: vnp_IpAddr,
-      vnp_SecureHash: vnp_SecureHash,
-    };
-    // axios
-    //   .post(vnp_Api, dataObj)
-    //   .then((response) => {
-    //     console.log("d", response.data);
-    //   })
-    //   .catch((error) => {
-    //     console.error(error);
-    //   });
-
-    const user = await UserModel.findById(order.userId);
-    sendPushNotification(
-      user.fcmTokens,
-      "Vé của bạn đã được hủy, số tiền thanh toán sẽ được hoàn lại",
-      "Hủy vé thành công"
-    );
-    const event = await EventModel.findById(order.eventId);
-    const newNoti = new NotificatioModel({
-      userId: order.userId,
-      body: `Bạn đã hủy vé sự kiện ${event.title}, số tiền thanh toán sẽ được hoàn lại`,
-      title: "Hủy vé thành công",
-      type: "ticket",
-    });
-    await newNoti.save();
     return res.status(200).json({ message: "success" });
   }
 
-  // Truy xuất thông tin đơn hàng
 
-  // if (order.status === "Paid") {
-  //   const payment = await PaymentModel.findOne({ orderId: orderId });
-  //   if (!payment) {
-  //     return res.status(404).json({ message: "Payment not found." });
-  //   }
-  // } else {
-  //   return res.status(200).json({ message: "success" });
-  // }
 };
 const getAccessTokenPaypal = async () => {
   try {
@@ -451,7 +450,7 @@ function sortObject(obj) {
 
 const vnPaySuccess = async (req, res) => {
   try {
-    // console.log(req.query);
+    console.log(req.query);
     const orderId = req.query.vnp_TxnRef;
     const transactionId = req.query.vnp_TransactionNo;
 

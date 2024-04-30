@@ -6,6 +6,8 @@ const UserModel = require("../models/UserModel");
 const CategoryModel = require("../models/CategoryModel");
 const OrderModel = require("../models/OrderModel");
 const NotificationModel = require("../models/NotificationModel");
+const OrganizerModel = require("../models/OrganizerModel");
+
 const {
   handleSendNotification,
   sendPushNotification,
@@ -64,12 +66,35 @@ const addEvent = async (req, res) => {
 
     const savedTickets = await Promise.all(ticketPromises);
 
-    // Lưu trữ ObjectId của các loại vé vào sự kiện
+
     event.tickets = savedTickets.map((ticket) => ticket._id);
 
-    // Lưu trữ sự kiện đã cập nhật vào cơ sở dữ liệu
     await event.save({ session });
 
+    const organizerData = await OrganizerModel.findById(event.organizer)
+    if (organizerData.followers.length > 0) {
+      for (const follower of organizerData.followers) {
+        const user = await UserModel.findById(follower);
+        if (user) {
+          try {
+            sendPushNotification(
+              user.fcmTokens,
+              `${organizerData.organizationName} tổ chức bạn theo dõi đã tạo 1 sự kiện mới `,
+              "Sự kiện mới"
+            );
+            const newNotification = new NotificationModel({
+              userId: follower,
+              body: `${organizerData.organizationName} tổ chức bạn theo dõi đã tạo 1 sự kiện ${event.title}. Đây sẽ là một trải nghiệm tuyệt vời không thể bỏ qua!`,
+              title: "Sự kiện mới",
+              type: "create-event",
+            });
+            await newNotification.save();
+          } catch (notificationError) {
+            console.error("Lỗi khi gửi thông báo:", notificationError);
+          }
+        }
+      }
+    }
     await session.commitTransaction();
     session.endSession();
 
@@ -159,11 +184,11 @@ const getEvent = async (req, res) => {
       .limit(limit ?? 0);
 
     if (lat && long && distance) {
-      const eventNear = await EventModel.find(query)
-      .populate("tickets", "ticketType price quantity")
-      .limit(limit ?? 0);
+      // const eventNear = await EventModel.find(query)
+      // .populate("tickets", "ticketType price quantity")
+      // .limit(limit ?? 0);
 
-      const filteredEvents = eventNear.filter((event) => {
+      const filteredEvents = eventList.filter((event) => {
         const eventDistance = calculateDistance(
           lat,
           long,

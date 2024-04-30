@@ -381,33 +381,7 @@ const updateFcmToken = async (req, res) => {
 //     });
 // };
 
-const deleteFcmToken = async (req, res) => {
-  try {
-    const { fcmToken, userId } = req.body;
-    let user = await UserModel.findById(userId);
 
-    if (!user) {
-      // Nếu không tìm thấy, tìm trong collection người tổ chức sự kiện
-      user = await OrganizerModel.findById(userId);
-    }
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    const index = user.fcmTokens.indexOf(fcmToken);
-
-    if (index === -1) {
-      return res.status(404).json({ message: "FcmToken not found" });
-    }
-    console.log(index);
-    user.fcmTokens.splice(index, 1);
-    await user.save();
-
-    res.status(200).json({ message: "Thành công", data: user.fcmTokens });
-  } catch (error) {
-    res.status(500).json("Lỗi");
-  }
-};
 const sendNotification = async (req, res) => {
   try {
     const { userId, body, title, data } = req.body;
@@ -456,6 +430,5 @@ module.exports = {
   getFriend,
   updateFcmToken,
   sendNotification,
-  deleteFcmToken,
   getFollowings
 };

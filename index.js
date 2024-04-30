@@ -12,6 +12,7 @@ const ticketRouter = require("./src/routers/ticketRoute");
 const orderRouter = require("./src/routers/orderRouter");
 const notificationRouter = require("./src/routers/notificationRouter");
 const organizerRouter = require("./src/routers/organizerRouter");
+const authenticateToken = require("./src/middlewares/verifyMiddleware");
 
 
 const app = express();
@@ -27,14 +28,14 @@ app.use(express.json());
 const PORT = 3001;
 
 app.use("/auth", authRouter);
-app.use("/user", userRouter);
-app.use("/event", eventRouter);
-app.use("/category", categoryRouter)
+app.use("/user",authenticateToken, userRouter);
+app.use("/event",authenticateToken, eventRouter);
+app.use("/category",authenticateToken, categoryRouter)
 app.use("/payment", paymentRouter)
-app.use("/ticket", ticketRouter)
-app.use("/order", orderRouter)
-app.use("/notification", notificationRouter)
-app.use("/organizer", organizerRouter)
+app.use("/ticket",authenticateToken, ticketRouter)
+app.use("/order",authenticateToken, orderRouter)
+app.use("/notification",authenticateToken, notificationRouter)
+app.use("/organizer",authenticateToken, organizerRouter)
 
 
 connectDB();

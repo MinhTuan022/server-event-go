@@ -244,14 +244,7 @@ const login = asyncHandle(async (req, res) => {
   if (!existingUser) {
     return res.status(404).json({ message: "User not found" });
   }
-  // const existingUser = await UserModel.findOne({ email });
 
-  // if (!existingUser) {
-  //   res.status(403);
-  //   // .json({ message: "User not found !" });
-
-  //   throw new Error("User not found !");
-  // }
   if (!existingUser.fcmTokens.includes(fcmToken)) {
     // Nếu chưa tồn tại, thêm userInfo.fcmToken vào mảng fcmTokens
     existingUser.fcmTokens.push(fcmToken);
@@ -306,7 +299,7 @@ const loginSocial = asyncHandle(async (req, res) => {
       existingUser.fcmTokens.push(userInfo.fcmTokens);
     }
     // Cập nhật updatedAt và lưu lại người dùng
-    existingUser.updateAt = Date.now();
+    existingUser.updatedAt = Date.now();
     await existingUser.save();
     existingUser.save();
     user = existingUser;
@@ -336,6 +329,35 @@ const loginSocial = asyncHandle(async (req, res) => {
     },
   });
 });
+
+const deleteFcmToken = async (req, res) => {
+  try {
+    const { fcmToken, userId } = req.body;
+    console.log(req.body)
+    let user = await UserModel.findById(userId);
+
+    if (!user) {
+      // Nếu không tìm thấy, tìm trong collection người tổ chức sự kiện
+      user = await OrganizerModel.findById(userId);
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const index = user.fcmTokens.indexOf(fcmToken);
+
+    if (index === -1) {
+      return res.status(404).json({ message: "FcmToken not found" });
+    }
+    console.log(index);
+    user.fcmTokens.splice(index, 1);
+    await user.save();
+
+    res.status(200).json({ message: "Thành công", data: user.fcmTokens });
+  } catch (error) {
+    res.status(500).json("Lỗi");
+  }
+};
 module.exports = {
   register,
   login,
@@ -345,4 +367,6 @@ module.exports = {
   checkUser,
   registerOrganizer,
   resetPassword,
+  deleteFcmToken,
+
 };
