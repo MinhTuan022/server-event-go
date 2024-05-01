@@ -66,12 +66,11 @@ const addEvent = async (req, res) => {
 
     const savedTickets = await Promise.all(ticketPromises);
 
-
     event.tickets = savedTickets.map((ticket) => ticket._id);
 
     await event.save({ session });
 
-    const organizerData = await OrganizerModel.findById(event.organizer)
+    const organizerData = await OrganizerModel.findById(event.organizer);
     if (organizerData.followers.length > 0) {
       for (const follower of organizerData.followers) {
         const user = await UserModel.findById(follower);
@@ -80,7 +79,8 @@ const addEvent = async (req, res) => {
             sendPushNotification(
               user.fcmTokens,
               `${organizerData.organizationName} tổ chức bạn theo dõi đã tạo 1 sự kiện mới `,
-              "Sự kiện mới"
+              "Sự kiện mới",
+              newEvent._id 
             );
             const newNotification = new NotificationModel({
               userId: follower,
@@ -248,15 +248,64 @@ const getFavoriteOfUser = async (req, res) => {
 
 const searchEvent = async (req, res) => {
   try {
-    const { title } = req.query;
+    const { title, categories, date, isFree } = req.query;
+
     console.log(req.query);
-    let query = {};
+    let filter = {};
 
     if (title) {
-      query.title = { $regex: title, $options: "i" };
+      filter.title = { $regex: title, $options: "i" };
     }
-    console.log(query);
-    const events = await EventModel.find(query);
+    if (categories && categories.length > 0) {
+      // const categoryNames = categories.map(category => category.trim());
+      let categoryNames = [];
+      if (categories && Array.isArray(categories)) {
+        // Nếu là một mảng, gán giá trị của categories vào biến categoryNames
+        categoryNames = categories;
+      } else if (categories) {
+        // Nếu categories không phải mảng, chuyển nó thành mảng bằng cách tách các giá trị dựa trên dấu phẩy
+        categoryNames = categories.split(",");
+      }
+      const foundCategories = await CategoryModel.find({
+        categoryName: { $in: categoryNames },
+      });
+
+      // Lấy danh sách ID của các danh mục tìm thấy
+      const categoryIds = foundCategories.map((category) => category._id);
+
+      console.log(categoryIds);
+      filter.category = { $in: categoryIds };
+    }
+
+    if (date) {
+      filter.startTime = { $gte: new Date(date) };
+    }
+
+    // Khởi tạo một mảng để lưu trữ ID của các sự kiện có vé miễn phí
+    let freeEventIds = [];
+
+    // Nếu isFree được chỉ định và có giá trị true, tìm các sự kiện có vé miễn phí
+    if (isFree && isFree.toLowerCase() === "true") {
+      // Tìm tất cả các sự kiện
+      const events = await EventModel.find(filter);
+
+      // Duyệt qua mỗi sự kiện và kiểm tra xem có vé miễn phí không
+      for (const event of events) {
+        // Kiểm tra nếu mỗi tài liệu Ticket liên quan đều có giá vé là 0
+        const tickets = await TicketModel.find({ _id: { $in: event.tickets } });
+        const isFreeEvent = tickets.every((ticket) => ticket.price === 0);
+
+        if (isFreeEvent) {
+          freeEventIds.push(event._id);
+        }
+      }
+
+      // Thêm điều kiện để lấy các sự kiện có ID nằm trong mảng freeEventIds
+      filter._id = { $in: freeEventIds };
+    }
+
+    console.log("m", filter);
+    const events = await EventModel.find(filter).populate("category");
 
     res.status(200).json({ message: "Search", data: events });
   } catch (error) {

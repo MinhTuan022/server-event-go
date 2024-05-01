@@ -1,8 +1,10 @@
 const NotificationModel = require("../models/NotificationModel");
-
+const { JWT } = require("google-auth-library");
 const getNotification = async (req, res) => {
   try {
     const { userId } = req.query;
+    
+    console.log(await getAccessToken())
     const notiList = await NotificationModel.find({ userId }).sort({createdAt: -1});
     if (!notiList) {
       return res.status(400).json("Không có thông báo nào");
@@ -45,7 +47,25 @@ const checkUnreadNotifications = async (req, res) => {
     res.status(500).json({ message: "Lỗi", error });
   }
 };
-
+const getAccessToken = () => {
+  return new Promise(function (resolve, reject) {
+    const key = require("../eventhub-firebase-mess.json");
+    const jwtClient = new JWT(
+      key.client_email,
+      null,
+      key.private_key,
+      ["https://www.googleapis.com/auth/cloud-platform"],
+      null
+    );
+    jwtClient.authorize(function (err, tokens) {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(tokens.access_token);
+    });
+  });
+};
 module.exports = {
   getNotification,
   updateIsRead,

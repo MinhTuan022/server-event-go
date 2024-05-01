@@ -14,6 +14,7 @@ const sendPushNotification = async (fcmTokens, body, title, data ) => {
   }
 }
 const handleSendNotification = async (fcmToken, body, title, notiData) => {
+  // console.log(notiData)
   let data = JSON.stringify({
     message: {
       token: fcmToken,
@@ -21,7 +22,7 @@ const handleSendNotification = async (fcmToken, body, title, notiData) => {
         body: body,
         title: title,
       },
-      data: notiData,
+      data: {id: notiData},
     },
   });
 console.log(data)
@@ -38,10 +39,10 @@ console.log(data)
 
   try {
     const response = await axios.request(config);
-    console.log(JSON.stringify(response.data));
+    // console.log(JSON.stringify(response.data));
     return response.data;
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     throw error;
   }
 };

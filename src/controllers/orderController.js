@@ -78,7 +78,7 @@ const getOrder = async (req, res) => {
           "eventId",
           "title address startTime endTime photoEvent organizer"
         )
-        .populate("ticketId", "price");
+        .populate("ticketId", "price ticketType");
       res.status(200).json({ message: "Succesfully", data: orderPaid });
     } else if (userId && status && status === "Completed") {
       const orderCompleted = await OrderModel.find({

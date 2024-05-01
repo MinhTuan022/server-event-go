@@ -34,7 +34,7 @@ app.use("/category",authenticateToken, categoryRouter)
 app.use("/payment", paymentRouter)
 app.use("/ticket",authenticateToken, ticketRouter)
 app.use("/order",authenticateToken, orderRouter)
-app.use("/notification",authenticateToken, notificationRouter)
+app.use("/notification", notificationRouter)
 app.use("/organizer",authenticateToken, organizerRouter)
 
 

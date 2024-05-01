@@ -5,6 +5,10 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const OrganizerModel = require("../models/OrganizerModel");
 const NotificatioModel = require("../models/NotificationModel");
+const {
+  handleSendNotification,
+  sendPushNotification,
+} = require("../utils/notificationHandler");
 
 require("dotenv").config();
 
@@ -76,6 +80,9 @@ const forgotPassword = asyncHandle(async (req, res) => {
 
   if (!existingUser) {
     return res.status(404).json({ message: "User not found" });
+  }
+  if (existingUser && !existingUser.password) {
+    return res.status(404).json({ message: "Tài khoản đã liên kết" });
   }
 
   const verificationCode = Math.round(1000 + Math.random() * 9000);
@@ -163,6 +170,69 @@ const resetPassword = async (req, res) => {
     res.status(400).json({ message: "Lỗi" });
   }
 };
+
+const changePassword = async (req, res) => {
+  try {
+    const { userId, oldPassword, newPassword } = req.body;
+    console.log(req.body);
+    let existingUser = await UserModel.findById(userId);
+
+    if (!existingUser) {
+      existingUser = await OrganizerModel.findById(userId);
+    }
+
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const isMatchPassword = await bcrypt.compare(
+      oldPassword,
+      existingUser.password
+    );
+
+    if (!isMatchPassword) {
+      return res.status(401).json({ message: "Mật khẩu cũ không đúng" });
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    existingUser.password = hashedPassword;
+    existingUser.updatedAt = Date.now();
+
+    await existingUser.save();
+    const newNoti = new NotificatioModel({
+      userId: existingUser._id,
+      body: "Bạn đã thay đổi mật khẩu mới",
+      title: "Đổi mật khẩu",
+      type: "account",
+    });
+    await newNoti.save();
+    res.status(200).json({ message: "Thành công" });
+  } catch (error) {
+    res.status(400).json({ message: "Lỗi" });
+  }
+};
+const checkLinked = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    let existingUser = await UserModel.findById(userId);
+
+    if (!existingUser) {
+      existingUser = await OrganizerModel.findById(userId);
+    }
+
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (existingUser && existingUser.password) {
+      return res.status(200).json({ message: "Không liên kết", data: false });
+    } else {
+      return res.status(200).json({ message: "Liên kết", data: true });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi" });
+  }
+};
 const register = asyncHandle(async (req, res) => {
   const { email, name, password, fcmTokens } = req.body;
 
@@ -178,12 +248,24 @@ const register = asyncHandle(async (req, res) => {
   const newUser = new UserModel({
     email,
     name: name ? name : "",
+    photo: "https://th.bing.com/th/id/OIP.DxdqBFLVLPcWsjkds8636QHaHf?rs=1&pid=ImgDetMain",
     password: hashedPassword,
     fcmTokens: fcmTokens ?? [],
   });
 
   await newUser.save();
-
+  sendPushNotification(
+    newUser.fcmTokens,
+    "Chúc mừng! Tài khoản của bạn đã được tạo thành công trên EventHub. Bắt đầu khám phá và tham gia vào các sự kiện độc đáo ngay bây giờ!",
+    "Tạo Tài Khoản Thành Công"
+  );
+  const newNoti = new NotificatioModel({
+    userId: newUser._id,
+    body: `Chúc mừng! Tài khoản của bạn đã được tạo thành công trên EventHub. Bắt đầu khám phá và tham gia vào các sự kiện độc đáo ngay bây giờ!`,
+    title: "Tạo Tài Khoản Thành Công",
+    type: "account",
+  });
+  await newNoti.save();
   res.status(200).json({
     message: "Register new user successfully",
     data: {
@@ -212,6 +294,7 @@ const registerOrganizer = asyncHandle(async (req, res) => {
   const newOrganizer = new OrganizerModel({
     email,
     name: name ? name : "",
+    photo: "https://th.bing.com/th/id/OIP.DxdqBFLVLPcWsjkds8636QHaHf?rs=1&pid=ImgDetMain",
     password: hashedPassword,
     fcmTokens: fcmTokens ?? [],
     organizationAddress: address,
@@ -219,7 +302,18 @@ const registerOrganizer = asyncHandle(async (req, res) => {
   });
 
   await newOrganizer.save();
-
+  sendPushNotification(
+    newOrganizer.fcmTokens,
+    "Chúc mừng! Tài khoản của bạn đã được tạo thành công trên EventHub. Bắt đầu khám phá và tham gia vào các sự kiện độc đáo ngay bây giờ!",
+    "Tạo Tài Khoản Thành Công"
+  );
+  const newNoti = new NotificatioModel({
+    userId: newOrganizer._id,
+    body: `Chúc mừng! Tài khoản của bạn đã được tạo thành công trên EventHub. Bắt đầu khám phá và tham gia vào các sự kiện độc đáo ngay bây giờ!`,
+    title: "Tạo Tài Khoản Thành Công",
+    type: "account",
+  });
+  await newNoti.save();
   res.status(200).json({
     message: "Register new user successfully",
     data: {
@@ -333,7 +427,7 @@ const loginSocial = asyncHandle(async (req, res) => {
 const deleteFcmToken = async (req, res) => {
   try {
     const { fcmToken, userId } = req.body;
-    console.log(req.body)
+    console.log(req.body);
     let user = await UserModel.findById(userId);
 
     if (!user) {
@@ -368,5 +462,6 @@ module.exports = {
   registerOrganizer,
   resetPassword,
   deleteFcmToken,
-
+  changePassword,
+  checkLinked
 };
