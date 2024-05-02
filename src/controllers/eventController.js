@@ -80,7 +80,7 @@ const addEvent = async (req, res) => {
               user.fcmTokens,
               `${organizerData.organizationName} tổ chức bạn theo dõi đã tạo 1 sự kiện mới `,
               "Sự kiện mới",
-              newEvent._id 
+              newEvent._id
             );
             const newNotification = new NotificationModel({
               userId: follower,
@@ -131,7 +131,7 @@ const getEventByOrganizer = async (req, res) => {
     const event = await EventModel.find({ organizer: id }).populate(
       "tickets",
       "ticketType price quantity"
-    );
+    ).sort({startTime: 1});
 
     if (!event) {
       return res.status(404).json({ message: "Sự kiện không tồn tại." });
@@ -347,11 +347,10 @@ const deleteEvent = async (req, res) => {
           }
         }
       }
-
-      const deletedOrders = await OrderModel.deleteMany({ eventId: eventId });
-      const deletedTickets = await TicketModel.deleteMany({ eventId: eventId });
     }
 
+    const deletedOrders = await OrderModel.deleteMany({ eventId: eventId });
+    const deletedTickets = await TicketModel.deleteMany({ eventId: eventId });
     res.status(200).json({ message: "Xóa sự kiện thành công." });
   } catch (error) {
     console.error("Lỗi khi xóa sự kiện:", error);
