@@ -21,8 +21,8 @@ const createPayPal = async (req, res) => {
       payment_method: "paypal",
     },
     redirect_urls: {
-      return_url: "http://192.168.1.102:3001/payment/paypal-success",
-      cancel_url: "http://192.168.1.102:3001/payment/cancel",
+      return_url: "http://172.20.10.2:3001/payment/paypal-success",
+      cancel_url: "http://172.20.10.2:3001/payment/cancel",
     },
     transactions: [
       {
@@ -399,7 +399,7 @@ const createVnPay = async (req, res) => {
   let tmnCode = "QVC4CD2K";
   let secretKey = "PYKEWBFCKXHOLEJQUQENYZDXZXPHWLRY";
   let vnpUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-  let returnUrl = "http://192.168.1.102:3001/payment/vnpay-success";
+  let returnUrl = "http://172.20.10.2:3001/payment/vnpay-success";
   let amount = price * quantity;
   let bankCode = "VNBANK";
   let locale = "vn";
